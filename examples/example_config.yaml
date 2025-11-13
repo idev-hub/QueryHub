@@ -1,0 +1,8 @@
+# Example configuration for QueryHub automation workflows.
+schedules:
+  - name: weekly-sales-report
+    query: queries/weekly_sales.sql
+    cadence: "0 8 * * 1"  # every Monday at 08:00
+    recipients:
+      - finance@example.com
+    format: csv
