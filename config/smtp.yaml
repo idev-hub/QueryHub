@@ -1,0 +1,14 @@
+host: smtp.example.com
+port: 587
+use_tls: false
+starttls: true
+timeout_seconds: 30
+username: ${SMTP_USERNAME:reporter}
+password: ${SMTP_PASSWORD:changeme}
+default_from: reports@example.com
+default_to:
+  - data-team@example.com
+subject_template: "{{ title }} – {{ generated_at.strftime('%Y-%m-%d') }}"
+auth:
+  username: ${SMTP_USERNAME:reporter}
+  password: ${SMTP_PASSWORD:changeme}

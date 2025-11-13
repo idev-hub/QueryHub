@@ -1,0 +1,5 @@
+providers:
+  - id: csv_fixture
+    type: csv
+    root_path: ${CSV_ROOT}
+    delimiter: ","

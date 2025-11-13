@@ -1,0 +1,10 @@
+host: localhost
+port: 1025
+use_tls: false
+starttls: false
+username: null
+password: null
+default_from: reports@example.test
+default_to:
+  - qa@example.test
+subject_template: "Test Report"

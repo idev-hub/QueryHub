@@ -1,20 +1,15 @@
 """Command-line entry point for QueryHub."""
 
-import sys
+from __future__ import annotations
+
+from .cli import app
 
 
-def main(argv: list[str] | None = None) -> int:
-    """Run the QueryHub CLI."""
-    if argv is None:
-        argv = sys.argv[1:]
+def main() -> None:
+    """Invoke the Typer application."""
 
-    if not argv:
-        print("QueryHub CLI placeholder. Implement commands here.")
-        return 0
-
-    print(f"Unrecognized arguments: {argv}")
-    return 1
+    app()
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    main()
