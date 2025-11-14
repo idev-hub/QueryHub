@@ -29,6 +29,7 @@ class QueryHubApplicationBuilder:
         config_dir: Path,
         templates_dir: Path,
         auto_reload_templates: bool = False,
+        email_mode: bool = False,
         config_loader: ConfigLoaderProtocol | None = None,
         provider_factory: ProviderFactoryProtocol | None = None,
         provider_registry: ProviderRegistry | None = None,
@@ -38,6 +39,7 @@ class QueryHubApplicationBuilder:
         self._config_dir = Path(config_dir)
         self._templates_dir = Path(templates_dir)
         self._auto_reload_templates = auto_reload_templates
+        self._email_mode = email_mode
         self._config_loader = config_loader
         self._provider_factory = provider_factory
         self._provider_registry = provider_registry
@@ -66,7 +68,7 @@ class QueryHubApplicationBuilder:
     def _build_renderer_resolver(self) -> RendererRegistry:
         if isinstance(self._renderer_resolver, RendererRegistry):
             return self._renderer_resolver
-        return create_default_renderer_registry()
+        return create_default_renderer_registry(email_mode=self._email_mode)
 
     def _build_template_engine(self) -> ReportTemplateEngine:
         environment = build_environment(self._templates_dir, auto_reload=self._auto_reload_templates)

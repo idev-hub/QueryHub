@@ -545,6 +545,176 @@ async def test_all_visualizations(containers_ready: bool, monkeypatch) -> None:
 
 @pytest.mark.asyncio
 @pytest.mark.integration
+async def test_chart_visualizations(containers_ready: bool, monkeypatch) -> None:
+    """Test chart rendering with Plotly visualizations."""
+    config_dir = Path("tests/fixtures/docker_integration")
+    templates_dir = Path("templates")
+
+    dsn = "postgresql+asyncpg://testuser:testpass@localhost:5434/testdb"
+    monkeypatch.setenv("POSTGRES_DSN", dsn)
+
+    executor = await ReportExecutor.from_config_dir(
+        config_dir,
+        templates_dir=templates_dir,
+    )
+
+    try:
+        result = await executor.execute_report("chart_visualizations")
+    finally:
+        await executor.shutdown()
+
+    # Verify report was generated successfully
+    assert result is not None
+    assert not result.has_failures
+    assert result.html is not None
+    assert len(result.html) > 0
+
+    # Save rendered HTML for inspection
+    output_dir = Path("test_output")
+    output_dir.mkdir(exist_ok=True)
+    output_file = output_dir / "chart_visualizations_report.html"
+    output_file.write_text(result.html, encoding="utf-8")
+    print(f"\n✅ Chart visualizations report saved to: {output_file.absolute()}")
+
+    # Verify all 8 components executed successfully (7 charts + 1 table)
+    assert len(result.components) == 8
+
+    # Check that chart components contain Plotly elements
+    chart_components = [c for c in result.components if c.component.render.type.value == "chart"]
+    assert len(chart_components) == 7
+
+    for chart_component in chart_components:
+        assert chart_component.result is not None
+        assert len(chart_component.result.data) > 0
+        assert chart_component.rendered_html is not None
+        # Plotly charts should have plotly div elements
+        assert "plotly" in chart_component.rendered_html.lower()
+
+    # Verify specific chart components
+    bar_chart = next(c for c in result.components if c.component.id == "revenue_by_region_bar")
+    assert bar_chart.result is not None
+    assert "region" in bar_chart.result.data[0]
+    assert "total_revenue" in bar_chart.result.data[0]
+
+    line_chart = next(c for c in result.components if c.component.id == "revenue_trend_line")
+    assert line_chart.result is not None
+    assert "date" in line_chart.result.data[0]
+    assert "daily_revenue" in line_chart.result.data[0]
+
+    scatter_plot = next(c for c in result.components if c.component.id == "units_vs_revenue_scatter")
+    assert scatter_plot.result is not None
+    assert "units_sold" in scatter_plot.result.data[0]
+    assert "revenue" in scatter_plot.result.data[0]
+    assert "region" in scatter_plot.result.data[0]
+
+    # Check table component still works
+    table_component = next(c for c in result.components if c.component.id == "summary_stats_table")
+    assert table_component.result is not None
+    assert "total_transactions" in table_component.result.data[0]
+
+    # Verify HTML contains chart titles
+    assert "Revenue by Region (Bar Chart)" in result.html
+    assert "Revenue Trend Over Time (Line Chart)" in result.html
+    assert "Units Sold vs Revenue (Scatter Plot)" in result.html
+    assert "Product Performance by Region (Colored Bar Chart)" in result.html
+    assert "Daily Transaction Count (Line Chart)" in result.html
+    assert "Average Customer Rating by Product (Bar Chart)" in result.html
+    assert "System Health - Response Time vs Errors (Scatter Plot)" in result.html
+
+    print(f"\n📊 Chart Component Summary:")
+    for c in result.components:
+        status = "✅" if c.result else "⚠️"
+        print(f"  {status} {c.component.id} ({c.component.render.type.value})")
+
+
+@pytest.mark.asyncio
+@pytest.mark.integration
+async def test_chart_email_generation(containers_ready: bool, monkeypatch) -> None:
+    """Test email generation with chart visualizations and save as .eml file."""
+    from email.mime.multipart import MIMEMultipart
+    from email.mime.text import MIMEText
+    from datetime import datetime
+    
+    config_dir = Path("tests/fixtures/docker_integration")
+    templates_dir = Path("templates")
+
+    dsn = "postgresql+asyncpg://testuser:testpass@localhost:5434/testdb"
+    monkeypatch.setenv("POSTGRES_DSN", dsn)
+
+    # Use email_mode=True to render charts as static images
+    executor = await ReportExecutor.from_config_dir(
+        config_dir,
+        templates_dir=templates_dir,
+        email_mode=True,
+    )
+
+    try:
+        result = await executor.execute_report("chart_visualizations")
+    finally:
+        await executor.shutdown()
+
+    assert result is not None
+    assert not result.has_failures
+    assert result.html is not None
+
+    # Create email message
+    msg = MIMEMultipart('alternative')
+    msg['Subject'] = 'QueryHub - Chart Visualizations Report'
+    msg['From'] = 'queryhub@example.com'
+    msg['To'] = 'user@example.com'
+    msg['Date'] = datetime.now().strftime('%a, %d %b %Y %H:%M:%S %z')
+
+    # Add plain text version
+    text_content = f"""
+QueryHub Report: Chart Visualizations
+
+This is an HTML email. Please view it in an email client that supports HTML.
+
+Report generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+Components: {len(result.components)}
+Charts: 7 static images (email-compatible)
+"""
+    
+    # Attach parts
+    part1 = MIMEText(text_content, 'plain')
+    part2 = MIMEText(result.html, 'html')
+    
+    msg.attach(part1)
+    msg.attach(part2)
+
+    # Save as .eml file
+    output_dir = Path("test_output")
+    output_dir.mkdir(exist_ok=True)
+    eml_file = output_dir / "chart_visualizations_email.eml"
+    
+    with open(eml_file, 'w', encoding='utf-8') as f:
+        f.write(msg.as_string())
+    
+    print(f"\n📧 Email saved to: {eml_file.absolute()}")
+    print(f"📊 Components included: {len(result.components)}")
+    print(f"📝 HTML size: {len(result.html):,} bytes")
+    print(f"\n💡 To view the email:")
+    print(f"   macOS: open {eml_file}")
+    print(f"   Linux: xdg-open {eml_file}")
+    print(f"   Windows: start {eml_file}")
+    
+    # Verify file was created and has content
+    assert eml_file.exists()
+    assert eml_file.stat().st_size > 0
+    
+    # Verify email structure
+    email_content = eml_file.read_text(encoding='utf-8')
+    assert 'Subject: QueryHub - Chart Visualizations Report' in email_content
+    assert 'Content-Type: text/html' in email_content
+    assert 'Content-Type: text/plain' in email_content
+    
+    # Verify HTML contains static images (base64 encoded PNG)
+    assert 'data:image/png;base64,' in result.html
+    assert 'Revenue by Region (Bar Chart)' in result.html
+
+
+@pytest.mark.asyncio
+@pytest.mark.integration
 async def test_email_generation(containers_ready: bool, monkeypatch) -> None:
     """Test email generation with all visualizations and save as .eml file."""
     from email.mime.multipart import MIMEMultipart

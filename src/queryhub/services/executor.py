@@ -68,14 +68,23 @@ class ReportExecutor:
         *,
         templates_dir: Path | str,
         auto_reload_templates: bool = False,
+        email_mode: bool = False,
     ) -> "ReportExecutor":
-        """Factory method for creating executor from config directory."""
+        """Factory method for creating executor from config directory.
+        
+        Args:
+            config_dir: Path to configuration directory
+            templates_dir: Path to templates directory
+            auto_reload_templates: If True, reload templates on each render
+            email_mode: If True, render charts as static images for email compatibility
+        """
         from .application import QueryHubApplicationBuilder
 
         builder = QueryHubApplicationBuilder(
             config_dir=Path(config_dir),
             templates_dir=Path(templates_dir),
             auto_reload_templates=auto_reload_templates,
+            email_mode=email_mode,
         )
         return await builder.create_executor()
 
