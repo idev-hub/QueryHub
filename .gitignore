@@ -208,7 +208,7 @@ __marimo__/
 
 # QueryHub specific
 # Test output files
-test_output/
+# test_output/
 *.eml
 
 # Docker volumes and data
