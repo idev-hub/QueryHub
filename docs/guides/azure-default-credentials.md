@@ -26,13 +26,18 @@ QueryHub now supports Azure DefaultAzureCredential for Azure Data Explorer (ADX)
 ### Basic Setup
 
 ```yaml
+credentials:
+  - id: azure_default_creds
+    azure:
+      type: default_credentials
+
 providers:
   - id: my_adx_cluster
-    type: adx
-    cluster_uri: https://mycluster.kusto.windows.net
-    database: MyDatabase
-    credentials:
-      type: default_credentials
+    resource:
+      adx:
+        cluster_uri: https://mycluster.kusto.windows.net
+        database: MyDatabase
+    credentials: azure_default_creds
 ```
 
 That's it! No client IDs, secrets, or tokens needed.
@@ -157,16 +162,28 @@ If you're currently using service principal authentication, migration is easy:
 **Before:**
 ```yaml
 credentials:
-  type: service_principal
-  client_id: ${AZURE_CLIENT_ID}
-  client_secret: ${AZURE_CLIENT_SECRET}
-  tenant_id: ${AZURE_TENANT_ID}
+  - id: azure_sp
+    azure:
+      type: service_principal
+      client_id: ${AZURE_CLIENT_ID}
+      client_secret: ${AZURE_CLIENT_SECRET}
+      tenant_id: ${AZURE_TENANT_ID}
+
+providers:
+  - id: adx_cluster
+    credentials: azure_sp
 ```
 
 **After:**
 ```yaml
 credentials:
-  type: default_credentials
+  - id: azure_default
+    azure:
+      type: default_credentials
+
+providers:
+  - id: adx_cluster
+    credentials: azure_default
 ```
 
 Just ensure your user/managed identity has the same permissions as the service principal.
@@ -189,16 +206,20 @@ Consider using specific credential types in these scenarios:
 
 ```yaml
 # config/providers/providers.yaml
+credentials:
+  - id: production_azure_creds
+    azure:
+      type: default_credentials
+
 providers:
   - id: production_adx
-    type: adx
-    description: Production ADX cluster with default credentials
-    cluster_uri: https://prod-cluster.kusto.windows.net
-    database: ProductionDB
+    resource:
+      adx:
+        cluster_uri: https://prod-cluster.kusto.windows.net
+        database: ProductionDB
+    credentials: production_azure_creds
     default_timeout_seconds: 120
     retry_attempts: 3
-    credentials:
-      type: default_credentials
 ```
 
 ```yaml

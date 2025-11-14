@@ -39,6 +39,63 @@ queryhub run-report sample_report --config-dir config --templates-dir templates 
 
 > **Tip:** `queryhub run-report sample_report --no-email --output-html report.html` writes the rendered HTML without sending email.
 
+## Email Report Examples
+
+QueryHub generates fully-styled HTML email reports with multiple visualization types. Here are examples from our test reports:
+
+### Sales Dashboard Report
+A comprehensive business intelligence report featuring:
+- 📊 **Interactive Charts** - Bar charts, line graphs, scatter plots with Plotly
+- 📋 **Data Tables** - Formatted tables with sortable columns
+- 💹 **KPI Cards** - Key metrics with gradient backgrounds and trend indicators
+- 📈 **Progress Bars** - Visual progress indicators with percentage completion
+- 🏆 **Ranked Lists** - Top performers with medal indicators (🥇🥈🥉)
+- ⚠️ **Alert Boxes** - Conditional styling based on data thresholds
+- 🎯 **Product Badges** - Status indicators with color coding
+
+![Sales Dashboard Example](docs/images/sales-dashboard-report.png)
+
+*Example report showing revenue trends, regional performance, and customer ratings*
+
+### All Visualizations Report
+Comprehensive showcase of all available component types:
+- Tables (simple and aggregated)
+- Charts (bar, line, scatter)
+- Text components with templating
+- Custom HTML components
+- Conditional formatting
+
+![All Visualizations Example](docs/images/all-visualizations-report.png)
+
+*Full report demonstrating all supported visualization types*
+
+### Chart Visualizations Report
+Focus on data visualization with various chart types:
+- Revenue trends over time (line charts)
+- Regional comparisons (bar charts)
+- Correlation analysis (scatter plots)
+- Multi-dimensional data with color grouping
+
+![Chart Report Example](docs/images/chart-visualizations-report.png)
+
+*Report emphasizing chart-based data visualization*
+
+**To generate these examples:**
+```bash
+# Run all integration tests to generate report examples
+make test-all
+
+# View generated reports in test_output/
+open test_output/all_visualizations_report.html
+open test_output/sales_dashboard_report.html
+open test_output/chart_visualizations_report.html
+
+# Open email versions (.eml files) in your email client
+open test_output/all_visualizations_email.eml
+```
+
+> **Note:** Place screenshot images in `docs/images/` directory. You can generate screenshots by opening the HTML reports in a browser and taking screenshots, or by opening the `.eml` files in an email client.
+
 ## Configuration model
 ```
 config/

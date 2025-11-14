@@ -28,17 +28,22 @@ templates/               # Jinja2 templates
 Environment variables can override secrets via `${VAR:default}` placeholders. For example, set `POSTGRES_PASSWORD` to keep database credentials out of YAML.
 
 ## 3. Configure a provider
-Add a new entry to `config/providers/providers.yaml`:
+Add credentials and provider to `config/providers/providers.yaml`:
 ```yaml
-- id: customers_pg
-	type: sql
-	target:
-		dsn: postgresql+asyncpg://${PG_USER}:${PG_PASSWORD}@${PG_HOST:localhost}:5432/customers
-	credentials:
-		type: username_password
-		username: ${PG_USER}
-		password: ${PG_PASSWORD}
-	default_timeout_seconds: 45
+credentials:
+  - id: postgres_creds
+    postgresql:
+      type: username_password
+      username: ${PG_USER}
+      password: ${PG_PASSWORD}
+
+providers:
+  - id: customers_pg
+    resource:
+      sql:
+        dsn: postgresql+asyncpg://${PG_HOST:localhost}:5432/customers
+    credentials: postgres_creds
+    default_timeout_seconds: 45
 ```
 
 ## 4. Author a report

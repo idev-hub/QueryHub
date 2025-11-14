@@ -351,7 +351,7 @@ pip uninstall queryhub
 
 ## Minimum Requirements
 
-- **Python**: 3.10 or higher
+- **Python**: 3.11 or higher
 - **Memory**: 512 MB minimum, 2 GB recommended
 - **Disk**: 100 MB for installation, more for data/reports
 - **Network**: Required for cloud provider access
@@ -372,6 +372,15 @@ sudo -u queryhub /opt/queryhub/venv/bin/pip install queryhub[cloud]
 sudo systemctl enable queryhub
 sudo systemctl start queryhub
 ```
+
+## New Multi-Cloud Architecture
+
+QueryHub now uses a multi-cloud architecture where:
+- **Credentials** are defined once with unique IDs, organized by cloud provider (`azure:`, `aws:`, `gcp:`, `postgresql:`, `generic:`)
+- **Providers** reference credentials by ID for reusability
+- **Cloud-specific** implementations in separate folders (`providers/azure/`, `providers/aws/`, `providers/gcp/`, `providers/generic/`)
+
+See the [Architecture Documentation](../reference/architecture.md) for details.
 
 ## Getting Help
 
