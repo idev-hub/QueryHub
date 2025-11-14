@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Sales & Health Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { font-family: "Segoe UI", Arial, sans-serif; margin: 0; padding: 24px; background-color: #f5f7fb; color: #222; }
+    header { border-bottom: 2px solid #4f6df5; margin-bottom: 24px; padding-bottom: 12px; }
+    header h1 { margin: 0; }
+    .metadata { color: #555; font-size: 0.9rem; }
+    .component { background: #fff; border-radius: 8px; padding: 16px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08); }
+    .component h3 { margin-top: 0; color: #26307d; }
+    .component-table table { width: 100%; border-collapse: collapse; }
+    .component-table th, .component-table td { border: 1px solid #d9def9; padding: 8px; text-align: left; }
+    .component-table th { background-color: #eef1ff; font-weight: 600; }
+    .component-error { padding: 12px; border-left: 4px solid #d14343; background-color: #fceaea; color: #8a1c1c; }
+    footer { margin-top: 32px; font-size: 0.85rem; color: #666; }
+  </style>
+  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+</head>
+<body>
+  <header>
+    <h1>Sales & Health Dashboard</h1>
+<p>Integration test report with PostgreSQL data</p>    <p class="metadata">Generated at 2025-11-14T20:28:49.966559+00:00</p>
+  </header>
+
+    <section id="component-sales_by_region" class="component">
+        <div class="component component-table"><h3>Sales by Region</h3><table><thead><tr><th>region</th><th>total_revenue</th><th>total_units</th><th>transaction_count</th><th>avg_revenue</th></tr></thead><tbody><tr><td>North America</td><td>48800.00</td><td>922</td><td>4</td><td>12200.00</td></tr><tr><td>Asia Pacific</td><td>47500.00</td><td>703</td><td>3</td><td>15833.33</td></tr><tr><td>Europe</td><td>30300.00</td><td>485</td><td>3</td><td>10100.00</td></tr></tbody></table></div>
+    </section>
+    <section id="component-product_performance" class="component">
+        <div class="component component-table"><h3>Product Performance</h3><table><thead><tr><th>product</th><th>total_revenue</th><th>total_units</th><th>price_per_unit</th></tr></thead><tbody><tr><td>Widget Pro</td><td>93000.00</td><td>930</td><td>100.00</td></tr><tr><td>Widget Lite</td><td>33600.00</td><td>1180</td><td>28.47</td></tr></tbody></table></div>
+    </section>
+    <section id="component-customer_satisfaction" class="component">
+        <div class="component component-table"><h3>Customer Satisfaction Summary</h3><table><thead><tr><th>product</th><th>feedback_count</th><th>avg_rating</th><th>positive_count</th><th>negative_count</th></tr></thead><tbody><tr><td>Widget Pro</td><td>4</td><td>4.75</td><td>4</td><td>0</td></tr><tr><td>Widget Lite</td><td>4</td><td>4.00</td><td>3</td><td>0</td></tr></tbody></table></div>
+    </section>
+    <section id="component-recent_feedback" class="component">
+        <div class="component component-table"><h3>Recent Customer Feedback</h3><table><thead><tr><th>customer_name</th><th>product</th><th>rating</th><th>comment</th><th>feedback_date</th></tr></thead><tbody><tr><td>Henry Martinez</td><td>Widget Lite</td><td>4</td><td>Good product overall.</td><td>2025-11-04</td></tr><tr><td>Grace Lee</td><td>Widget Pro</td><td>5</td><td>Highly recommend to everyone.</td><td>2025-11-04</td></tr><tr><td>Frank Wilson</td><td>Widget Lite</td><td>5</td><td>Simple and effective!</td><td>2025-11-03</td></tr><tr><td>Eve Davis</td><td>Widget Pro</td><td>4</td><td>Very satisfied with performance.</td><td>2025-11-03</td></tr><tr><td>David Brown</td><td>Widget Lite</td><td>3</td><td>Decent but could be better.</td><td>2025-11-02</td></tr></tbody></table></div>
+    </section>
+    <section id="component-system_health" class="component">
+        <div class="component component-table"><h3>System Health Status</h3><table><thead><tr><th>service_name</th><th>status</th><th>response_time_ms</th><th>error_count</th><th>check_timestamp</th></tr></thead><tbody><tr><td>API Gateway</td><td>healthy</td><td>45</td><td>0</td><td>2025-11-14 10:00:00</td></tr><tr><td>Analytics Service</td><td>healthy</td><td>156</td><td>0</td><td>2025-11-14 10:00:00</td></tr><tr><td>Cache Service</td><td>healthy</td><td>8</td><td>0</td><td>2025-11-14 10:00:00</td></tr><tr><td>Database</td><td>healthy</td><td>12</td><td>0</td><td>2025-11-14 10:00:00</td></tr><tr><td>Email Service</td><td>degraded</td><td>320</td><td>2</td><td>2025-11-14 10:00:00</td></tr></tbody></table></div>
+    </section>
+
+  <footer>
+    <p>Report assembled by QueryHub.</p>
+  </footer>
+</body>
+</html>

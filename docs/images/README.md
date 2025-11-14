@@ -1,134 +1,71 @@
-# Screenshot Images
+# Report Examples
 
-This directory contains screenshot images for documentation.
+This directory contains HTML report examples for documentation.
 
-## Required Screenshots
+## Available Examples
 
-To complete the README documentation, add the following screenshots:
+### 1. sales_dashboard_report.html
+Business intelligence dashboard with sales metrics, regional performance, and customer feedback.
 
-### 1. sales-dashboard-report.png
-**Source:** `test_output/sales_dashboard_report.html`
+**Features:**
+- Data tables with sales metrics
+- Revenue and transaction charts
+- Customer rating displays
+- System health indicators
 
-**How to generate:**
-```bash
-# Run integration tests to generate the report
-pytest tests/test_docker_integration.py::test_postgres_sales_report -v
+### 2. all_visualizations_report.html
+Comprehensive showcase of all QueryHub visualization types.
 
-# Open in browser and take screenshot
-open test_output/sales_dashboard_report.html
-```
-
-**What to capture:** Full page screenshot showing:
-- Report header with title and metadata
-- Multiple components (tables, charts, KPI cards)
-- Clean, professional email-ready styling
-
-**Recommended dimensions:** 1200px wide (retina display recommended)
-
-### 2. all-visualizations-report.png
-**Source:** `test_output/all_visualizations_report.html`
-
-**How to generate:**
-```bash
-# Run the all visualizations test
-pytest tests/test_docker_integration.py::test_all_visualizations -v
-
-# Open and screenshot
-open test_output/all_visualizations_report.html
-```
-
-**What to capture:** Comprehensive view showing:
-- Various table formats
-- Chart examples (bar, line, scatter)
-- Text components with formatting
+**Features:**
+- Multiple table formats (simple, aggregated, feedback)
+- Text components with templating
 - Custom HTML components
-- Alert boxes and badges
+- KPI cards and metrics
+- Lists and badges
+- Alert boxes with conditional styling
 
-**Recommended dimensions:** 1200px wide, full page or key sections
+### 3. chart_visualizations_report.html
+Data visualization focused report with various Plotly chart types.
 
-### 3. chart-visualizations-report.png
-**Source:** `test_output/chart_visualizations_report.html`
+**Features:**
+- Bar charts (revenue by region, product performance)
+- Line charts (revenue trends, transaction counts)
+- Scatter plots (units vs revenue, system health)
+- Multi-dimensional data with color grouping
+- Summary statistics table
 
-**How to generate:**
+## Viewing Examples
+
+### In Browser
 ```bash
-# Run the chart visualizations test
-pytest tests/test_docker_integration.py::test_chart_visualizations -v
+# Open from command line
+open docs/images/sales_dashboard_report.html
+open docs/images/all_visualizations_report.html
+open docs/images/chart_visualizations_report.html
 
-# Open and screenshot
-open test_output/chart_visualizations_report.html
+# Or navigate in browser to file:///path/to/QueryHub/docs/images/
 ```
 
-**What to capture:** Focus on data visualization:
-- Multiple Plotly charts
-- Different chart types (bar, line, scatter)
-- Color-coded data series
-- Clean chart presentation
+### On GitHub
+When viewing the README on GitHub, click the links to view the raw HTML files.
 
-**Recommended dimensions:** 1200px wide
+## Regenerating Examples
 
-## Screenshot Tips
-
-### Using Browser Developer Tools
-1. Open HTML file in Chrome/Firefox
-2. Press F12 to open DevTools
-3. Press Ctrl+Shift+P (Cmd+Shift+P on Mac)
-4. Type "Capture full size screenshot" and press Enter
-5. Save to this directory with the correct filename
-
-### Using macOS Screenshot Tools
-```bash
-# Full window screenshot
-open test_output/sales_dashboard_report.html
-# Press Cmd+Shift+4, then press Space, then click the browser window
-```
-
-### Using Email Client
-For email appearance screenshots:
-```bash
-# Open .eml file in email client
-open test_output/all_visualizations_email.eml
-
-# Take screenshot of email client showing the report
-```
-
-## Image Guidelines
-
-- **Format:** PNG (for best quality)
-- **Width:** 1200-1400px recommended
-- **Compression:** Optimize images before committing (use ImageOptim, TinyPNG, etc.)
-- **File size:** Keep under 500KB per image if possible
-- **Naming:** Use exact filenames referenced in README.md
-- **Retina:** Use retina display for crisp screenshots
-
-## Alternative: Automated Screenshot Generation
-
-For automated screenshot generation, consider using:
-
-```python
-# Using Playwright (example)
-from playwright.sync_api import sync_playwright
-
-def capture_report_screenshot(html_file: str, output_file: str):
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        page = browser.new_page(viewport={"width": 1200, "height": 800})
-        page.goto(f"file://{html_file}")
-        page.screenshot(path=output_file, full_page=True)
-        browser.close()
-
-# Usage
-capture_report_screenshot(
-    "test_output/sales_dashboard_report.html",
-    "docs/images/sales-dashboard-report.png"
-)
-```
-
-## Verification
-
-After adding screenshots, verify they display correctly:
+To update these examples with fresh data:
 
 ```bash
-# Preview README
-open README.md  # in your markdown viewer
-# Or on GitHub after committing
+# Run integration tests
+pytest tests/test_docker_integration.py -v -m integration
+
+# Copy updated reports
+cp test_output/sales_dashboard_report.html docs/images/
+cp test_output/all_visualizations_report.html docs/images/
+cp test_output/chart_visualizations_report.html docs/images/
 ```
+
+## Notes
+
+- These HTML files are self-contained and can be opened directly in any browser
+- They include embedded Plotly JavaScript for interactive charts
+- Email versions (.eml files) can be found in `test_output/` after running tests
+- The reports use inline CSS for email client compatibility
