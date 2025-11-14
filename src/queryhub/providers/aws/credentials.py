@@ -28,12 +28,12 @@ class AWSDefaultCredential(BaseCredential[AWSCredentialConfig | None, Any]):
 
     def __init__(self, config: AWSCredentialConfig | None = None) -> None:
         super().__init__(config)
-        self._session = None
+        self._session: Any = None
 
     async def get_connection(self, **context: Any) -> Any:
         """Get AWS connection using default credential chain."""
         try:
-            import boto3  # type: ignore[import-untyped]
+            import boto3
         except ImportError as exc:
             raise ProviderInitializationError(
                 "boto3 is required for AWS. Install with: pip install boto3"
@@ -62,7 +62,7 @@ class AWSAccessKeyCredential(BaseCredential[AWSCredentialConfig, Any]):
 
     def __init__(self, config: AWSCredentialConfig) -> None:
         super().__init__(config)
-        self._session = None
+        self._session: Any = None
 
     async def get_connection(self, **context: Any) -> Any:
         """Get AWS connection using access key."""
@@ -110,7 +110,7 @@ class AWSIAMRoleCredential(BaseCredential[AWSCredentialConfig, Any]):
 
     def __init__(self, config: AWSCredentialConfig) -> None:
         super().__init__(config)
-        self._session = None
+        self._session: Any = None
 
     async def get_connection(self, **context: Any) -> Any:
         """Get AWS connection by assuming IAM role."""
