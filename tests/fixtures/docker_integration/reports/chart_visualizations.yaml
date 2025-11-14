@@ -1,0 +1,166 @@
+id: chart_visualizations
+title: Chart Visualizations Test Report
+description: Test report showcasing various chart types using Plotly
+template: report.html.j2
+
+components:
+  # 1. Bar Chart - Revenue by Region
+  - id: revenue_by_region_bar
+    title: Revenue by Region (Bar Chart)
+    provider: postgres_test
+    query:
+      text: |
+        SELECT 
+          region,
+          SUM(revenue) as total_revenue
+        FROM sales_metrics
+        GROUP BY region
+        ORDER BY total_revenue DESC
+    render:
+      type: chart
+      options:
+        chart_type: bar
+        x_field: region
+        y_field: total_revenue
+
+  # 2. Line Chart - Revenue Trend Over Time
+  - id: revenue_trend_line
+    title: Revenue Trend Over Time (Line Chart)
+    provider: postgres_test
+    query:
+      text: |
+        SELECT 
+          DATE(sale_date) as date,
+          SUM(revenue) as daily_revenue
+        FROM sales_metrics
+        GROUP BY DATE(sale_date)
+        ORDER BY date
+    render:
+      type: chart
+      options:
+        chart_type: line
+        x_field: date
+        y_field: daily_revenue
+
+  # 3. Scatter Plot - Units Sold vs Revenue
+  - id: units_vs_revenue_scatter
+    title: Units Sold vs Revenue (Scatter Plot)
+    provider: postgres_test
+    query:
+      text: |
+        SELECT 
+          units_sold,
+          revenue,
+          region
+        FROM sales_metrics
+        ORDER BY sale_date
+    render:
+      type: chart
+      options:
+        chart_type: scatter
+        x_field: units_sold
+        y_field: revenue
+        color: region
+
+  # 4. Bar Chart - Product Performance with Color
+  - id: product_performance_bar
+    title: Product Performance by Region (Colored Bar Chart)
+    provider: postgres_test
+    query:
+      text: |
+        SELECT 
+          product,
+          SUM(revenue) as total_revenue,
+          region
+        FROM sales_metrics
+        GROUP BY product, region
+        ORDER BY total_revenue DESC
+    render:
+      type: chart
+      options:
+        chart_type: bar
+        x_field: product
+        y_field: total_revenue
+        color: region
+
+  # 5. Line Chart - Sales Transactions by Date
+  - id: transactions_trend_line
+    title: Daily Transaction Count (Line Chart)
+    provider: postgres_test
+    query:
+      text: |
+        SELECT 
+          DATE(sale_date) as date,
+          COUNT(*) as transaction_count
+        FROM sales_metrics
+        GROUP BY DATE(sale_date)
+        ORDER BY date
+    render:
+      type: chart
+      options:
+        chart_type: line
+        x_field: date
+        y_field: transaction_count
+
+  # 6. Bar Chart - Average Rating by Product
+  - id: ratings_by_product_bar
+    title: Average Customer Rating by Product (Bar Chart)
+    provider: postgres_test
+    query:
+      text: |
+        SELECT 
+          product,
+          ROUND(AVG(rating), 2) as avg_rating
+        FROM customer_feedback
+        GROUP BY product
+        ORDER BY avg_rating DESC
+    render:
+      type: chart
+      options:
+        chart_type: bar
+        x_field: product
+        y_field: avg_rating
+
+  # 7. Scatter Plot - Response Time vs Error Count
+  - id: health_scatter
+    title: System Health - Response Time vs Errors (Scatter Plot)
+    provider: postgres_test
+    timeout_seconds: 60
+    query:
+      text: |
+        SELECT 
+          service_name,
+          response_time_ms,
+          error_count,
+          status
+        FROM system_health
+    render:
+      type: chart
+      options:
+        chart_type: scatter
+        x_field: response_time_ms
+        y_field: error_count
+        color: status
+
+  # 8. Table for comparison - Summary stats
+  - id: summary_stats_table
+    title: Summary Statistics (Table)
+    provider: postgres_test
+    timeout_seconds: 60
+    query:
+      text: |
+        SELECT 
+          COUNT(*) as total_transactions,
+          SUM(revenue) as total_revenue,
+          ROUND(AVG(revenue), 2) as avg_revenue,
+          SUM(units_sold) as total_units,
+          COUNT(DISTINCT region) as unique_regions,
+          COUNT(DISTINCT product) as unique_products
+        FROM sales_metrics
+    render:
+      type: table
+
+email:
+  to:
+    - test@queryhub.local
+  subject: "[Test] Chart Visualizations Report"

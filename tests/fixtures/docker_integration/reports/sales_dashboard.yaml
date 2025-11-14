@@ -1,0 +1,104 @@
+id: sales_dashboard
+title: Sales & Health Dashboard
+description: Integration test report with PostgreSQL data
+template: report.html.j2
+
+components:
+  # Sales by region summary
+  - id: sales_by_region
+    title: Sales by Region
+    provider: postgres_test
+    query:
+      text: |
+        SELECT 
+          region,
+          SUM(revenue) as total_revenue,
+          SUM(units_sold) as total_units,
+          COUNT(*) as transaction_count,
+          ROUND(AVG(revenue), 2) as avg_revenue
+        FROM sales_metrics
+        GROUP BY region
+        ORDER BY total_revenue DESC
+    render:
+      type: table
+
+  # Product performance
+  - id: product_performance
+    title: Product Performance
+    provider: postgres_test
+    query:
+      text: |
+        SELECT 
+          product,
+          SUM(revenue) as total_revenue,
+          SUM(units_sold) as total_units,
+          ROUND(SUM(revenue) / NULLIF(SUM(units_sold), 0), 2) as price_per_unit
+        FROM sales_metrics
+        GROUP BY product
+        ORDER BY total_revenue DESC
+    render:
+      type: table
+
+  # Customer satisfaction
+  - id: customer_satisfaction
+    title: Customer Satisfaction Summary
+    provider: postgres_test
+    query:
+      text: |
+        SELECT 
+          product,
+          COUNT(*) as feedback_count,
+          ROUND(AVG(rating), 2) as avg_rating,
+          COUNT(CASE WHEN rating >= 4 THEN 1 END) as positive_count,
+          COUNT(CASE WHEN rating <= 2 THEN 1 END) as negative_count
+        FROM customer_feedback
+        GROUP BY product
+        ORDER BY avg_rating DESC
+    render:
+      type: table
+
+  # Recent feedback
+  - id: recent_feedback
+    title: Recent Customer Feedback
+    provider: postgres_test
+    query:
+      text: |
+        SELECT 
+          customer_name,
+          product,
+          rating,
+          comment,
+          feedback_date
+        FROM customer_feedback
+        ORDER BY feedback_date DESC, id DESC
+        LIMIT 5
+    render:
+      type: table
+
+  # System health status
+  - id: system_health
+    title: System Health Status
+    provider: postgres_test
+    query:
+      text: |
+        SELECT 
+          service_name,
+          status,
+          response_time_ms,
+          error_count,
+          check_timestamp
+        FROM system_health
+        ORDER BY 
+          CASE status 
+            WHEN 'healthy' THEN 1
+            WHEN 'degraded' THEN 2
+            ELSE 3
+          END,
+          service_name
+    render:
+      type: table
+
+email:
+  to:
+    - integration-test@queryhub.test
+  subject: "[Test] Sales & Health Dashboard Report"

@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>All Visualization Types Test</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { font-family: "Segoe UI", Arial, sans-serif; margin: 0; padding: 24px; background-color: #f5f7fb; color: #222; }
+    header { border-bottom: 2px solid #4f6df5; margin-bottom: 24px; padding-bottom: 12px; }
+    header h1 { margin: 0; }
+    .metadata { color: #555; font-size: 0.9rem; }
+    .component { background: #fff; border-radius: 8px; padding: 16px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08); }
+    .component h3 { margin-top: 0; color: #26307d; }
+    .component-table table { width: 100%; border-collapse: collapse; }
+    .component-table th, .component-table td { border: 1px solid #d9def9; padding: 8px; text-align: left; }
+    .component-table th { background-color: #eef1ff; font-weight: 600; }
+    .component-error { padding: 12px; border-left: 4px solid #d14343; background-color: #fceaea; color: #8a1c1c; }
+    footer { margin-top: 32px; font-size: 0.85rem; color: #666; }
+  </style>
+  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+</head>
+<body>
+  <header>
+    <h1>All Visualization Types Test</h1>
+<p>Test report showcasing all available visualization types</p>    <p class="metadata">Generated at 2025-11-14T17:53:28.477078+00:00</p>
+  </header>
+
+    <section id="component-simple_table" class="component">
+        <div class="component component-table"><h3>Simple Table - All Sales</h3><table><thead><tr><th>region</th><th>product</th><th>revenue</th><th>units_sold</th><th>sale_date</th></tr></thead><tbody><tr><td>Asia Pacific</td><td>Widget Pro</td><td>19800.00</td><td>198</td><td>2025-11-04</td></tr><tr><td>North America</td><td>Widget Lite</td><td>9100.00</td><td>310</td><td>2025-11-04</td></tr><tr><td>North America</td><td>Widget Pro</td><td>16200.00</td><td>162</td><td>2025-11-03</td></tr><tr><td>Europe</td><td>Widget Pro</td><td>11500.00</td><td>115</td><td>2025-11-03</td></tr><tr><td>Asia Pacific</td><td>Widget Pro</td><td>18500.00</td><td>185</td><td>2025-11-02</td></tr><tr><td>Asia Pacific</td><td>Widget Lite</td><td>9200.00</td><td>320</td><td>2025-11-02</td></tr><tr><td>North America</td><td>Widget Pro</td><td>15000.00</td><td>150</td><td>2025-11-01</td></tr><tr><td>Europe</td><td>Widget Pro</td><td>12000.00</td><td>120</td><td>2025-11-01</td></tr><tr><td>North America</td><td>Widget Lite</td><td>8500.00</td><td>300</td><td>2025-11-01</td></tr><tr><td>Europe</td><td>Widget Lite</td><td>6800.00</td><td>250</td><td>2025-11-01</td></tr></tbody></table></div>
+    </section>
+    <section id="component-aggregated_table" class="component">
+        <div class="component component-table"><h3>Aggregated Sales by Region</h3><table><thead><tr><th>region</th><th>transaction_count</th><th>total_revenue</th><th>total_units</th><th>avg_revenue</th><th>first_sale</th><th>last_sale</th></tr></thead><tbody><tr><td>North America</td><td>4</td><td>48800.00</td><td>922</td><td>12200.00</td><td>2025-11-01</td><td>2025-11-04</td></tr><tr><td>Asia Pacific</td><td>3</td><td>47500.00</td><td>703</td><td>15833.33</td><td>2025-11-02</td><td>2025-11-04</td></tr><tr><td>Europe</td><td>3</td><td>30300.00</td><td>485</td><td>10100.00</td><td>2025-11-01</td><td>2025-11-03</td></tr></tbody></table></div>
+    </section>
+    <section id="component-feedback_table" class="component">
+        <div class="component component-table"><h3>Customer Feedback</h3><table><thead><tr><th>customer_name</th><th>product</th><th>rating</th><th>comment</th><th>feedback_date</th></tr></thead><tbody><tr><td>Grace Lee</td><td>Widget Pro</td><td>5</td><td>Highly recommend to everyone.</td><td>2025-11-04</td></tr><tr><td>Frank Wilson</td><td>Widget Lite</td><td>5</td><td>Simple and effective!</td><td>2025-11-03</td></tr><tr><td>Carol White</td><td>Widget Pro</td><td>5</td><td>Best purchase this year!</td><td>2025-11-02</td></tr><tr><td>Alice Johnson</td><td>Widget Pro</td><td>5</td><td>Excellent product! Exceeded expectations.</td><td>2025-11-01</td></tr><tr><td>Henry Martinez</td><td>Widget Lite</td><td>4</td><td>Good product overall.</td><td>2025-11-04</td></tr><tr><td>Eve Davis</td><td>Widget Pro</td><td>4</td><td>Very satisfied with performance.</td><td>2025-11-03</td></tr><tr><td>Bob Smith</td><td>Widget Lite</td><td>4</td><td>Good value for money, works well.</td><td>2025-11-01</td></tr><tr><td>David Brown</td><td>Widget Lite</td><td>3</td><td>Decent but could be better.</td><td>2025-11-02</td></tr></tbody></table></div>
+    </section>
+    <section id="component-total_revenue_text" class="component">
+        <div class="component component-text"><h3>Total Revenue</h3><div class="text-body">Total Revenue: 126,600.00</div></div>
+    </section>
+    <section id="component-transaction_count" class="component">
+        <div class="component component-text"><h3>Transaction Count</h3><div class="text-body">Total Transactions: 10</div></div>
+    </section>
+    <section id="component-health_status" class="component">
+        <div class="component component-table"><h3>System Health</h3><table><thead><tr><th>service_name</th><th>status</th><th>response_time_ms</th><th>error_count</th><th>check_timestamp</th></tr></thead><tbody><tr><td>API Gateway</td><td>healthy</td><td>45</td><td>0</td><td>2025-11-14 10:00:00</td></tr><tr><td>Analytics Service</td><td>healthy</td><td>156</td><td>0</td><td>2025-11-14 10:00:00</td></tr><tr><td>Cache Service</td><td>healthy</td><td>8</td><td>0</td><td>2025-11-14 10:00:00</td></tr><tr><td>Database</td><td>healthy</td><td>12</td><td>0</td><td>2025-11-14 10:00:00</td></tr><tr><td>Email Service</td><td>degraded</td><td>320</td><td>2</td><td>2025-11-14 10:00:00</td></tr></tbody></table></div>
+    </section>
+    <section id="component-top_products" class="component">
+        <div class="component component-table"><h3>Top 5 Products by Revenue</h3><table><thead><tr><th>product</th><th>total_revenue</th><th>total_units</th><th>transactions</th></tr></thead><tbody><tr><td>Widget Pro</td><td>93000.00</td><td>930</td><td>6</td></tr><tr><td>Widget Lite</td><td>33600.00</td><td>1180</td><td>4</td></tr></tbody></table></div>
+    </section>
+    <section id="component-average_ratings" class="component">
+        <div class="component component-table"><h3>Product Ratings</h3><table><thead><tr><th>product</th><th>review_count</th><th>avg_rating</th><th>min_rating</th><th>max_rating</th></tr></thead><tbody><tr><td>Widget Pro</td><td>4</td><td>4.75</td><td>4</td><td>5</td></tr><tr><td>Widget Lite</td><td>4</td><td>4.00</td><td>3</td><td>5</td></tr></tbody></table></div>
+    </section>
+    <section id="component-recent_transactions" class="component">
+        <div class="component component-table"><h3>Last 5 Transactions</h3><table><thead><tr><th>sale_date</th><th>region</th><th>product</th><th>revenue</th><th>units_sold</th><th>price_per_unit</th></tr></thead><tbody><tr><td>2025-11-04</td><td>North America</td><td>Widget Lite</td><td>9100.00</td><td>310</td><td>29.35</td></tr><tr><td>2025-11-04</td><td>Asia Pacific</td><td>Widget Pro</td><td>19800.00</td><td>198</td><td>100.00</td></tr><tr><td>2025-11-03</td><td>Europe</td><td>Widget Pro</td><td>11500.00</td><td>115</td><td>100.00</td></tr><tr><td>2025-11-03</td><td>North America</td><td>Widget Pro</td><td>16200.00</td><td>162</td><td>100.00</td></tr><tr><td>2025-11-02</td><td>Asia Pacific</td><td>Widget Lite</td><td>9200.00</td><td>320</td><td>28.75</td></tr></tbody></table></div>
+    </section>
+    <section id="component-average_rating" class="component">
+        <div class="component component-text"><h3>Overall Average Rating</h3><div class="text-body">Average Customer Rating: 4.38 out of 5 stars</div></div>
+    </section>
+    <section id="component-key_metrics_card" class="component">
+        <div class="component component-html"><h3>Key Performance Indicators</h3><div class="html-body"><div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;">
+  <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 8px; text-align: center;">
+    <div style="font-size: 32px; font-weight: bold;">10</div>
+    <div style="font-size: 14px; opacity: 0.9;">Total Transactions</div>
+  </div>
+  <div style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; padding: 20px; border-radius: 8px; text-align: center;">
+    <div style="font-size: 32px; font-weight: bold;">126,600</div>
+    <div style="font-size: 14px; opacity: 0.9;">Total Revenue</div>
+  </div>
+  <div style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; padding: 20px; border-radius: 8px; text-align: center;">
+    <div style="font-size: 32px; font-weight: bold;">12,660</div>
+    <div style="font-size: 14px; opacity: 0.9;">Avg Transaction</div>
+  </div>
+  <div style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); color: white; padding: 20px; border-radius: 8px; text-align: center;">
+    <div style="font-size: 32px; font-weight: bold;">19,800</div>
+    <div style="font-size: 14px; opacity: 0.9;">Max Transaction</div>
+  </div>
+</div></div></div>
+    </section>
+    <section id="component-top_regions_list" class="component">
+        <div class="component component-html"><h3>Top Performing Regions</h3><div class="html-body"><div style="font-family: Arial, sans-serif;">
+  
+  <div style="display: flex; align-items: center; padding: 12px; margin-bottom: 8px; background: #ffd70020; border-left: 4px solid #ffd700; border-radius: 4px;">
+    <div style="font-size: 24px; font-weight: bold; width: 40px; color: #ffd700;">#1</div>
+    <div style="flex: 1;">
+      <div style="font-weight: bold; font-size: 16px;">North America</div>
+      <div style="color: #666; font-size: 14px;">4 transactions • 48,800.00</div>
+    </div>
+  </div>
+  
+  <div style="display: flex; align-items: center; padding: 12px; margin-bottom: 8px; background: #c0c0c020; border-left: 4px solid #c0c0c0; border-radius: 4px;">
+    <div style="font-size: 24px; font-weight: bold; width: 40px; color: #c0c0c0;">#2</div>
+    <div style="flex: 1;">
+      <div style="font-weight: bold; font-size: 16px;">Asia Pacific</div>
+      <div style="color: #666; font-size: 14px;">3 transactions • 47,500.00</div>
+    </div>
+  </div>
+  
+  <div style="display: flex; align-items: center; padding: 12px; margin-bottom: 8px; background: #cd7f3220; border-left: 4px solid #cd7f32; border-radius: 4px;">
+    <div style="font-size: 24px; font-weight: bold; width: 40px; color: #cd7f32;">#3</div>
+    <div style="flex: 1;">
+      <div style="font-weight: bold; font-size: 16px;">Europe</div>
+      <div style="color: #666; font-size: 14px;">3 transactions • 30,300.00</div>
+    </div>
+  </div>
+  
+</div></div></div>
+    </section>
+    <section id="component-rating_distribution" class="component">
+        <div class="component component-html"><h3>Customer Rating Distribution</h3><div class="html-body"><div style="font-family: Arial, sans-serif;">
+  
+  <div style="margin-bottom: 12px;">
+    <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+      <span style="font-weight: 500;">5 stars</span>
+      <span style="color: #666;">4 reviews (50.0%)</span>
+    </div>
+    <div style="background: #e0e0e0; height: 24px; border-radius: 12px; overflow: hidden;">
+      <div style="background: linear-gradient(90deg, #4ade80 0%, #22c55e 100%); height: 100%; width: 50.0%; transition: width 0.3s;"></div>
+    </div>
+  </div>
+  
+  <div style="margin-bottom: 12px;">
+    <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+      <span style="font-weight: 500;">4 stars</span>
+      <span style="color: #666;">3 reviews (37.5%)</span>
+    </div>
+    <div style="background: #e0e0e0; height: 24px; border-radius: 12px; overflow: hidden;">
+      <div style="background: linear-gradient(90deg, #4ade80 0%, #22c55e 100%); height: 100%; width: 37.5%; transition: width 0.3s;"></div>
+    </div>
+  </div>
+  
+  <div style="margin-bottom: 12px;">
+    <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+      <span style="font-weight: 500;">3 stars</span>
+      <span style="color: #666;">1 reviews (12.5%)</span>
+    </div>
+    <div style="background: #e0e0e0; height: 24px; border-radius: 12px; overflow: hidden;">
+      <div style="background: linear-gradient(90deg, #4ade80 0%, #22c55e 100%); height: 100%; width: 12.5%; transition: width 0.3s;"></div>
+    </div>
+  </div>
+  
+</div></div></div>
+    </section>
+    <section id="component-product_badges" class="component">
+        <div class="component component-html"><h3>Product Performance Badges</h3><div class="html-body"><div style="display: flex; flex-wrap: wrap; gap: 12px;">
+  
+  <div style="flex: 1; min-width: 200px; padding: 16px; border: 2px solid #ef4444; border-radius: 8px; background: white;">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+      <span style="font-weight: bold; font-size: 16px;">Widget Pro</span>
+      <span style="background: #ef4444; color: white; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: bold;">Top Seller</span>
+    </div>
+    <div style="color: #666; font-size: 14px;">93,000.00</div>
+    <div style="color: #94a3b8; font-size: 12px;">6 sales</div>
+  </div>
+  
+  <div style="flex: 1; min-width: 200px; padding: 16px; border: 2px solid #94a3b8; border-radius: 8px; background: white;">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+      <span style="font-weight: bold; font-size: 16px;">Widget Lite</span>
+      <span style="background: #94a3b8; color: white; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: bold;">Regular</span>
+    </div>
+    <div style="color: #666; font-size: 14px;">33,600.00</div>
+    <div style="color: #94a3b8; font-size: 12px;">4 sales</div>
+  </div>
+  
+</div></div></div>
+    </section>
+    <section id="component-health_alert" class="component">
+        <div class="component component-html"><h3>System Health Alert</h3><div class="html-body"><div style="font-family: Arial, sans-serif;">
+  
+  
+  <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 16px; border-radius: 4px;">
+    <div style="display: flex; align-items: center; margin-bottom: 8px;">
+      <span style="font-size: 20px; margin-right: 8px;">⚡</span>
+      <span style="font-weight: bold; color: #d97706;">Warning: Degraded Performance</span>
+    </div>
+    <p style="margin: 0; color: #92400e;">1 service(s) experiencing degraded performance. 4 services healthy.</p>
+  </div>
+  
+</div></div></div>
+    </section>
+
+  <footer>
+    <p>Report assembled by QueryHub.</p>
+  </footer>
+</body>
+</html>

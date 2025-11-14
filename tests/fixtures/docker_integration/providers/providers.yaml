@@ -1,0 +1,14 @@
+credentials:
+  - id: postgres_credentials
+    postgresql:
+      type: connection_string
+      connection_string: ${POSTGRES_DSN}
+
+providers:
+  - id: postgres_test
+    resource:
+      sql:
+        dsn: ${POSTGRES_DSN}
+        options:
+          echo: false
+    credentials: postgres_credentials

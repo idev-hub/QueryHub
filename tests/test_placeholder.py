@@ -1,8 +1,11 @@
-"""Placeholder tests for the QueryHub package."""
+"""Smoke tests for the package exports."""
 
-from queryhub import __all__
+from queryhub import ConfigLoader, EmailClient, ReportExecutor
 
 
-def test_placeholder() -> None:
-    """Temporary sanity check test."""
-    assert isinstance(__all__, list)
+def test_public_api() -> None:
+    """Validate that top-level imports remain available."""
+
+    assert ConfigLoader is not None
+    assert EmailClient is not None
+    assert ReportExecutor is not None

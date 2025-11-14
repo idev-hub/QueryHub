@@ -1,0 +1,255 @@
+# =============================================================================
+# QueryHub Provider Examples
+# Complete reference for all supported provider types
+# =============================================================================
+
+providers:
+  # ===========================================================================
+  # PostgreSQL Provider
+  # ===========================================================================
+  - id: postgres_example
+    type: sql
+    description: PostgreSQL database connection
+    default_timeout_seconds: 45
+    target:
+      dsn: postgresql+asyncpg://${POSTGRES_USER:dbuser}:${POSTGRES_PASSWORD:dbpass}@${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:mydb}
+      options:
+        application_name: queryhub
+        command_timeout: 60
+    credentials:
+      type: username_password
+      username: ${POSTGRES_USER:dbuser}
+      password: ${POSTGRES_PASSWORD:dbpass}
+
+  # ===========================================================================
+  # MySQL Provider
+  # ===========================================================================
+  - id: mysql_example
+    type: sql
+    description: MySQL/MariaDB database connection
+    target:
+      dsn: mysql+aiomysql://${MYSQL_USER:root}:${MYSQL_PASSWORD:password}@${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/${MYSQL_DB:mydb}
+      options:
+        charset: utf8mb4
+        connect_timeout: 10
+    credentials:
+      type: username_password
+      username: ${MYSQL_USER:root}
+      password: ${MYSQL_PASSWORD:password}
+
+  # ===========================================================================
+  # SQLite Provider (Local File)
+  # ===========================================================================
+  - id: sqlite_example
+    type: sql
+    description: SQLite local database
+    target:
+      dsn: sqlite+aiosqlite:///./data/local.db
+    credentials:
+      type: none
+
+  # ===========================================================================
+  # Microsoft SQL Server Provider
+  # ===========================================================================
+  - id: sqlserver_example
+    type: sql
+    description: Microsoft SQL Server connection
+    target:
+      dsn: mssql+aioodbc://${MSSQL_USER:sa}:${MSSQL_PASSWORD:Password123}@${MSSQL_HOST:localhost}:${MSSQL_PORT:1433}/${MSSQL_DB:master}?driver=ODBC+Driver+17+for+SQL+Server
+    credentials:
+      type: username_password
+      username: ${MSSQL_USER:sa}
+      password: ${MSSQL_PASSWORD:Password123}
+
+  # ===========================================================================
+  # Azure Data Explorer (Kusto) - Default Credentials
+  # ===========================================================================
+  - id: adx_default_credentials
+    type: adx
+    description: Azure Data Explorer with Default Credentials (local identity or managed identity)
+    cluster_uri: https://${ADX_CLUSTER:mycluster}.kusto.windows.net
+    database: ${ADX_DATABASE:MyDatabase}
+    default_timeout_seconds: 120
+    retry_attempts: 3
+    credentials:
+      type: default_credentials
+
+  # ===========================================================================
+  # Azure Data Explorer (Kusto) - Managed Identity
+  # ===========================================================================
+  - id: adx_managed_identity
+    type: adx
+    description: Azure Data Explorer with Managed Identity
+    cluster_uri: https://${ADX_CLUSTER:mycluster}.kusto.windows.net
+    database: ${ADX_DATABASE:MyDatabase}
+    default_timeout_seconds: 120
+    retry_attempts: 3
+    credentials:
+      type: managed_identity
+      client_id: ${ADX_CLIENT_ID:}
+
+  # ===========================================================================
+  # Azure Data Explorer (Kusto) - Service Principal
+  # ===========================================================================
+  - id: adx_service_principal
+    resource_provider: azure
+    resource_type: adx
+    description: Azure Data Explorer with Service Principal
+    cluster_uri: https://${ADX_CLUSTER:mycluster}.kusto.windows.net
+    database: ${ADX_DATABASE:MyDatabase}
+    credentials:
+      type: service_principal
+      client_id: ${AZURE_CLIENT_ID}
+      client_secret: ${AZURE_CLIENT_SECRET}
+      tenant_id: ${AZURE_TENANT_ID}
+
+  # ===========================================================================
+  # REST API - Bearer Token Authentication
+  # ===========================================================================
+  - id: rest_api_bearer
+    type: rest
+    description: REST API with Bearer token
+    base_url: https://api.example.com/v1/
+    default_headers:
+      Accept: application/json
+      Content-Type: application/json
+    credentials:
+      type: bearer_token
+      token: ${API_TOKEN}
+    request_options:
+      timeout: 30
+      raise_for_status: true
+
+  # ===========================================================================
+  # REST API - API Key in Header
+  # ===========================================================================
+  - id: rest_api_key
+    type: rest
+    description: REST API with API key
+    base_url: https://api.example.com/v2/
+    default_headers:
+      Accept: application/json
+      X-API-Key: ${API_KEY}
+    credentials:
+      type: token
+      token: ${API_KEY}
+      header_name: X-API-Key
+    request_options:
+      timeout: 30
+
+  # ===========================================================================
+  # REST API - OAuth2 / Token Authentication
+  # ===========================================================================
+  - id: rest_oauth2
+    type: rest
+    description: REST API with OAuth2
+    base_url: https://api.example.com/
+    credentials:
+      type: bearer_token
+      token: ${OAUTH_ACCESS_TOKEN}
+    request_options:
+      timeout: 30
+
+  # ===========================================================================
+  # REST API - Basic Authentication
+  # ===========================================================================
+  - id: rest_basic_auth
+    type: rest
+    description: REST API with Basic Auth
+    base_url: https://api.example.com/
+    credentials:
+      type: username_password
+      username: ${API_USERNAME}
+      password: ${API_PASSWORD}
+    request_options:
+      timeout: 30
+
+  # ===========================================================================
+  # REST API - No Authentication (Public API)
+  # ===========================================================================
+  - id: rest_public_api
+    type: rest
+    description: Public REST API
+    base_url: https://api.open-meteo.com/v1/
+    default_headers:
+      Accept: application/json
+    credentials:
+      type: none
+    request_options:
+      timeout: 15
+      raise_for_status: false
+
+  # ===========================================================================
+  # CSV File Provider - Local Files
+  # ===========================================================================
+  - id: csv_local
+    type: csv
+    description: Local CSV files
+    root_path: ${CSV_ROOT:./data}
+    delimiter: ","
+    encoding: utf-8
+
+  # ===========================================================================
+  # CSV File Provider - Tab-Separated Values
+  # ===========================================================================
+  - id: tsv_local
+    type: csv
+    description: Tab-separated files
+    root_path: ./data
+    delimiter: "\t"
+    encoding: utf-8
+
+  # ===========================================================================
+  # CSV File Provider - Semicolon-Separated (European format)
+  # ===========================================================================
+  - id: csv_european
+    type: csv
+    description: European CSV format
+    root_path: ./data
+    delimiter: ";"
+    encoding: utf-8
+
+# =============================================================================
+# Environment Variables Reference
+# =============================================================================
+# 
+# PostgreSQL:
+#   - POSTGRES_USER
+#   - POSTGRES_PASSWORD
+#   - POSTGRES_HOST
+#   - POSTGRES_PORT
+#   - POSTGRES_DB
+#
+# MySQL:
+#   - MYSQL_USER
+#   - MYSQL_PASSWORD
+#   - MYSQL_HOST
+#   - MYSQL_PORT
+#   - MYSQL_DB
+#
+# SQL Server:
+#   - MSSQL_USER
+#   - MSSQL_PASSWORD
+#   - MSSQL_HOST
+#   - MSSQL_PORT
+#   - MSSQL_DB
+#
+# Azure Data Explorer:
+#   - ADX_CLUSTER
+#   - ADX_DATABASE
+#   - ADX_CLIENT_ID
+#   - AZURE_CLIENT_ID
+#   - AZURE_CLIENT_SECRET
+#   - AZURE_TENANT_ID
+#
+# REST APIs:
+#   - API_TOKEN
+#   - API_KEY
+#   - OAUTH_ACCESS_TOKEN
+#   - API_USERNAME
+#   - API_PASSWORD
+#
+# CSV:
+#   - CSV_ROOT
+#
+# =============================================================================

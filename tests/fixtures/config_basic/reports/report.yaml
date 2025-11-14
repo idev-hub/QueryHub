@@ -1,0 +1,15 @@
+id: csv_only
+title: CSV Fixture Report
+description: Integration test report using CSV data only.
+template: report.html.j2
+components:
+  - id: csv_table
+    title: Sample Data Table
+    provider: csv_fixture
+    query:
+      path: sample.csv
+    render:
+      type: table
+email:
+  to:
+    - qa@example.test

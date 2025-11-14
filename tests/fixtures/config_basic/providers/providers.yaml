@@ -1,0 +1,12 @@
+credentials:
+  - id: csv_no_credentials
+    generic:
+      type: no_credential
+
+providers:
+  - id: csv_fixture
+    resource:
+      csv:
+        root_path: ${CSV_ROOT}
+        delimiter: ","
+    credentials: csv_no_credentials

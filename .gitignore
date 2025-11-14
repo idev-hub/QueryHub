@@ -205,3 +205,45 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# QueryHub specific
+# Test output files
+# test_output/
+*.eml
+
+# Docker volumes and data
+postgres_data/
+sqlserver_data/
+
+# Local configuration files (use examples instead)
+config/local/
+*.local.yaml
+
+# Generated reports and exports
+reports/output/
+exports/
+*.html.rendered
+
+# Log files
+*.log
+logs/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Temporary files
+.tmp/
+tmp/
+temp/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# VS Code
+.vscode/
+*.code-workspace
+

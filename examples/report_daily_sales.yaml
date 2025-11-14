@@ -1,0 +1,229 @@
+# =============================================================================
+# Daily Sales Report Example
+# Comprehensive sales analytics with multiple visualizations
+# =============================================================================
+
+id: daily_sales_report
+title: Daily Sales Performance Report
+description: Complete sales analytics including revenue, orders, and trends
+
+# Template to use for rendering
+template: report.html.j2
+
+# Report components
+components:
+  # ---------------------------------------------------------------------------
+  # Total Revenue Summary (Text)
+  # ---------------------------------------------------------------------------
+  - id: total_revenue
+    title: Total Revenue Today
+    description: Sum of all sales for the current day
+    provider: postgres_sales
+    timeout_seconds: 30
+    query:
+      text: |
+        SELECT 
+          COALESCE(SUM(amount), 0) as total_revenue,
+          COUNT(*) as order_count,
+          COALESCE(AVG(amount), 0) as avg_order_value
+        FROM sales
+        WHERE date = CURRENT_DATE
+    render:
+      type: text
+      options:
+        template: |
+          <div class="metric-card">
+            <h3>Today's Performance</h3>
+            <p class="metric-value">${{data[0].total_revenue:,.2f}}</p>
+            <p class="metric-label">Total Revenue</p>
+            <p class="metric-detail">{{data[0].order_count}} orders | Avg: ${{data[0].avg_order_value:,.2f}}</p>
+          </div>
+
+  # ---------------------------------------------------------------------------
+  # Revenue by Product Category (Table)
+  # ---------------------------------------------------------------------------
+  - id: revenue_by_category
+    title: Revenue by Product Category
+    description: Breakdown of sales by product category
+    provider: postgres_sales
+    query:
+      text: |
+        SELECT 
+          category,
+          COUNT(*) as orders,
+          SUM(amount) as revenue,
+          ROUND(AVG(amount), 2) as avg_order_value,
+          ROUND(SUM(amount) * 100.0 / SUM(SUM(amount)) OVER (), 2) as revenue_pct
+        FROM sales s
+        JOIN products p ON s.product_id = p.id
+        WHERE s.date = CURRENT_DATE
+        GROUP BY category
+        ORDER BY revenue DESC
+    render:
+      type: table
+      options:
+        columns: [category, orders, revenue, avg_order_value, revenue_pct]
+        headers:
+          category: Category
+          orders: Orders
+          revenue: Revenue
+          avg_order_value: Avg Order Value
+          revenue_pct: Revenue %
+
+  # ---------------------------------------------------------------------------
+  # Daily Sales Trend (Line Chart)
+  # ---------------------------------------------------------------------------
+  - id: sales_trend
+    title: 30-Day Sales Trend
+    description: Daily sales over the past 30 days
+    provider: postgres_sales
+    query:
+      text: |
+        SELECT 
+          date,
+          SUM(amount) as revenue,
+          COUNT(*) as orders
+        FROM sales
+        WHERE date >= CURRENT_DATE - INTERVAL '30 days'
+        GROUP BY date
+        ORDER BY date
+    render:
+      type: chart
+      options:
+        chart_type: line
+        x_field: date
+        y_field: revenue
+        title: Daily Revenue Trend (30 Days)
+        x_label: Date
+        y_label: Revenue ($)
+
+  # ---------------------------------------------------------------------------
+  # Top Products (Bar Chart)
+  # ---------------------------------------------------------------------------
+  - id: top_products
+    title: Top 10 Products by Revenue
+    description: Best-selling products today
+    provider: postgres_sales
+    query:
+      text: |
+        SELECT 
+          p.name as product,
+          SUM(s.amount) as revenue,
+          COUNT(*) as units_sold
+        FROM sales s
+        JOIN products p ON s.product_id = p.id
+        WHERE s.date = CURRENT_DATE
+        GROUP BY p.name
+        ORDER BY revenue DESC
+        LIMIT 10
+    render:
+      type: chart
+      options:
+        chart_type: bar
+        x_field: product
+        y_field: revenue
+        title: Top 10 Products Today
+        x_label: Product
+        y_label: Revenue ($)
+
+  # ---------------------------------------------------------------------------
+  # Sales by Region (Pie Chart)
+  # ---------------------------------------------------------------------------
+  - id: sales_by_region
+    title: Sales Distribution by Region
+    description: Geographic breakdown of sales
+    provider: postgres_sales
+    query:
+      text: |
+        SELECT 
+          region,
+          SUM(amount) as revenue,
+          COUNT(*) as orders
+        FROM sales
+        WHERE date = CURRENT_DATE
+        GROUP BY region
+        ORDER BY revenue DESC
+    render:
+      type: chart
+      options:
+        chart_type: pie
+        label_field: region
+        value_field: revenue
+        title: Sales by Region
+
+  # ---------------------------------------------------------------------------
+  # Hourly Sales Pattern (Area Chart)
+  # ---------------------------------------------------------------------------
+  - id: hourly_pattern
+    title: Hourly Sales Pattern
+    description: Sales distribution throughout the day
+    provider: postgres_sales
+    query:
+      text: |
+        SELECT 
+          EXTRACT(HOUR FROM created_at) as hour,
+          SUM(amount) as revenue,
+          COUNT(*) as orders
+        FROM sales
+        WHERE date = CURRENT_DATE
+        GROUP BY EXTRACT(HOUR FROM created_at)
+        ORDER BY hour
+    render:
+      type: chart
+      options:
+        chart_type: area
+        x_field: hour
+        y_field: revenue
+        title: Hourly Sales Pattern
+        x_label: Hour of Day
+        y_label: Revenue ($)
+
+  # ---------------------------------------------------------------------------
+  # Recent Large Orders (Table)
+  # ---------------------------------------------------------------------------
+  - id: large_orders
+    title: Recent Large Orders (>$1000)
+    description: High-value orders from today
+    provider: postgres_sales
+    query:
+      text: |
+        SELECT 
+          order_id,
+          customer_name,
+          amount,
+          status,
+          TO_CHAR(created_at, 'HH24:MI') as time
+        FROM sales
+        WHERE date = CURRENT_DATE 
+          AND amount > 1000
+        ORDER BY amount DESC
+        LIMIT 20
+    render:
+      type: table
+      options:
+        columns: [order_id, customer_name, amount, status, time]
+        headers:
+          order_id: Order ID
+          customer_name: Customer
+          amount: Amount
+          status: Status
+          time: Time
+
+# Email configuration for this report
+email:
+  to:
+    - sales-team@company.com
+    - management@company.com
+  cc:
+    - analytics@company.com
+  subject_template: "Daily Sales Report - {{ generated_at.strftime('%B %d, %Y') }}"
+  body_template: |
+    Daily sales performance report for {{ generated_at.strftime('%B %d, %Y') }}.
+    
+    See attached HTML report for detailed analytics.
+
+# Scheduling (optional - for reference)
+schedule:
+  cron: "0 18 * * *"  # Daily at 6 PM
+  timezone: America/New_York
+  enabled: true
