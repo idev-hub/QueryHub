@@ -1,5 +1,7 @@
 # QueryHub
 
+[![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)
+
 QueryHub turns declarative YAML configuration into automated, fully rendered HTML email reports. It fans out asynchronous queries to heterogeneous data sources, binds the responses to Jinja2 templates, and delivers the resulting document via SMTP.
 
 ## Highlights
@@ -14,9 +16,14 @@ QueryHub turns declarative YAML configuration into automated, fully rendered HTM
 ```bash
 git clone https://github.com/isasnovich/QueryHub.git
 cd QueryHub
-python -m venv .venv
-source .venv/bin/activate
-pip install -e .[dev]
+
+# Install uv if not already installed
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Create virtual environment and install dependencies
+uv venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+uv sync --all-extras
 
 # Optional: export secrets used in example YAML
 export POSTGRES_USER=reporter
@@ -158,6 +165,141 @@ factory = DefaultProviderFactory(settings.providers, registry)
 
 Providers receive the parsed query dictionary from YAML and should return a `QueryResult`. Custom registries can then be injected via `QueryHubApplicationBuilder`.
 
+## How to add a new provider
+
+Adding a custom provider to QueryHub involves three main steps: creating the provider class, defining the configuration model, and registering the provider.
+
+### Step 1: Create your provider class
+
+Subclass `QueryProvider` and implement the `execute()` method:
+
+```python
+# my_project/providers/elasticsearch.py
+from typing import Any, Mapping
+from queryhub.providers.base import QueryProvider, QueryResult
+from queryhub.config.models import BaseProviderConfig
+from queryhub.core.errors import ProviderExecutionError
+
+class ElasticsearchProvider(QueryProvider):
+    """Execute queries against Elasticsearch."""
+
+    def __init__(self, config: BaseProviderConfig) -> None:
+        super().__init__(config)
+        # Initialize your client here
+        self._client = None  # Initialize with config parameters
+
+    async def execute(self, query: Mapping[str, Any]) -> QueryResult:
+        """Execute an Elasticsearch query."""
+        # Extract query parameters
+        index = query.get("index")
+        body = query.get("body")
+        
+        if not index or not body:
+            raise ProviderExecutionError("Elasticsearch queries require 'index' and 'body'")
+        
+        # Execute your query
+        # response = await self._client.search(index=index, body=body)
+        response = {"hits": []}  # Example response
+        
+        # Return normalized result
+        return QueryResult(
+            data=response.get("hits", []),
+            metadata={"total": len(response.get("hits", []))}
+        )
+
+    async def close(self) -> None:
+        """Clean up resources."""
+        if self._client:
+            await self._client.close()
+```
+
+### Step 2: Define configuration model (optional)
+
+For type-safe configuration, create a config model:
+
+```python
+# my_project/config.py
+from dataclasses import dataclass
+from queryhub.config.models import BaseProviderConfig
+
+@dataclass
+class ElasticsearchProviderConfig(BaseProviderConfig):
+    """Configuration for Elasticsearch provider."""
+    hosts: list[str]
+    timeout: int = 30
+```
+
+### Step 3: Register your provider
+
+Register the provider with the registry before building your application:
+
+```python
+from pathlib import Path
+from queryhub.config.models import ProviderType
+from queryhub.core.providers import build_default_provider_registry
+from queryhub.services import QueryHubApplicationBuilder
+from my_project.providers.elasticsearch import ElasticsearchProvider
+
+# Build registry with your custom provider
+registry = build_default_provider_registry()
+registry.register(ProviderType("elasticsearch"), ElasticsearchProvider)
+
+# Create application with custom registry
+builder = QueryHubApplicationBuilder(
+    config_dir=Path("config"),
+    templates_dir=Path("templates"),
+)
+# Inject custom registry by providing a custom provider factory
+# Or use the builder's provider_factory parameter if available
+```
+
+### Step 4: Configure your provider in YAML
+
+Add your provider definition to `config/providers/providers.yaml`:
+
+```yaml
+providers:
+  - id: my_elasticsearch
+    type: elasticsearch
+    target:
+      hosts:
+        - https://es.example.com:9200
+    credentials:
+      type: bearer_token
+      token: ${ES_TOKEN}
+```
+
+### Step 5: Use in reports
+
+Reference your provider in report configurations:
+
+```yaml
+# config/reports/my_report.yaml
+components:
+  - id: search_results
+    provider: my_elasticsearch
+    query:
+      index: products
+      body:
+        query:
+          match_all: {}
+    render:
+      type: table
+      options:
+        columns: [name, price, category]
+```
+
+### Provider best practices
+
+- **Handle missing dependencies gracefully**: Use `_raise_missing_dependency()` for optional packages
+- **Validate configuration**: Override `_validate_config()` to check required settings
+- **Return normalized data**: Always return `QueryResult` with consistent data structures
+- **Implement cleanup**: Override `close()` to release connections and resources
+- **Add metadata**: Include useful metadata (row counts, execution time) in results
+- **Handle errors**: Raise `ProviderExecutionError` with descriptive messages
+
+See existing providers (`src/queryhub/providers/`) for complete implementation examples.
+
 ## Templates
 - Default template lives in `templates/report.html.j2` and includes styling plus Plotly support.
 - Add custom templates beside it and reference them by filename in report configs (`template: my-report.html.j2`).
@@ -166,13 +308,31 @@ Providers receive the parsed query dictionary from YAML and should return a `Que
 ```bash
 ruff check
 mypy src
+bandit -r src/ -c .bandit  # Security linting
+safety check                # Dependency vulnerability scanning
 pytest --asyncio-mode=auto
 ```
+
+Or use the Makefile for convenience:
+```bash
+make install       # Install with uv
+make lint          # Run Ruff linter
+make typecheck     # Run mypy type checking
+make security      # Run Bandit security checks
+make safety-check  # Check for vulnerable dependencies
+make check         # Run all checks (lint + typecheck + security)
+make test-unit     # Run unit tests only
+make test-all      # Run all tests including integration
+```
+
+**Note:** QueryHub uses [uv](https://docs.astral.sh/uv/) for fast, reliable dependency management.
 
 Example configs for tests live under `tests/fixtures/` and rely on environment placeholders (set `CSV_ROOT` to run the integration test).
 
 ## Additional resources
 - `docs/` – extended guides and CLI reference.
+- `docs/guides/uv-migration.md` – migration guide from pip to uv.
+- `docs/reference/security-tools.md` – security scanning with Bandit and Safety.
 - `examples/` – sample YAML snippets.
 - `scripts/setup_env.sh` – helper for local virtualenv bootstrap.
 

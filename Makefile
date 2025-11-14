@@ -59,7 +59,13 @@ format: ## Format code
 typecheck: ## Run type checking
 	mypy src/
 
-check: lint typecheck ## Run all checks (lint + typecheck)
+security: ## Run security checks (Bandit)
+	bandit -r src/ -c .bandit
+
+safety-check: ## Check dependencies for known vulnerabilities
+	safety scan --policy-file .safety-policy.yml || true
+
+check: lint typecheck security ## Run all checks (lint + typecheck + security)
 
 clean: ## Clean up temporary files and caches
 	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
@@ -72,10 +78,10 @@ clean: ## Clean up temporary files and caches
 	rm -rf .coverage
 
 install: ## Install package in development mode
-	pip install -e ".[dev]"
+	uv sync --all-extras
 
 install-prod: ## Install package in production mode
-	pip install -e .
+	uv sync
 
 # Integration test shortcuts
 postgres-shell: ## Open PostgreSQL shell

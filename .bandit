@@ -1,0 +1,12 @@
+exclude_dirs:
+  - /tests
+  - /.venv
+  - /venv
+  - /.tox
+  - /build
+  - /dist
+
+# Skip specific tests:
+# B101 - assert_used (common in tests and type guards)
+skips:
+  - B101

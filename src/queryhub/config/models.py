@@ -22,9 +22,9 @@ class CredentialType(str, Enum):
 
     MANAGED_IDENTITY = "managed_identity"
     SERVICE_PRINCIPAL = "service_principal"
-    USERNAME_PASSWORD = "username_password"
+    USERNAME_PASSWORD = "username_password"  # nosec B105 - enum value, not a password
     CONNECTION_STRING = "connection_string"
-    TOKEN = "token"
+    TOKEN = "token"  # nosec B105 - enum value, not a token
     NONE = "none"
 
 

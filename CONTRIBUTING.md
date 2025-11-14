@@ -4,14 +4,33 @@ Thanks for your interest in contributing! This document describes how to get sta
 
 ## Getting started
 - Fork the repository and clone your fork locally.
-- Install the project using `pip install -e .[dev]` to make sure all development dependencies are available.
+- Install [uv](https://docs.astral.sh/uv/) if you haven't already: `curl -LsSf https://astral.sh/uv/install.sh | sh`
+- Install the project using `uv sync --all-extras` to make sure all development dependencies are available.
 - Create a new branch for each change you plan to make.
 
 ## Development workflow
 1. Make your changes in small, logical commits.
-2. Run `ruff check` and `pytest` locally to ensure the codebase stays healthy.
+2. Run `make check` (or `uv run ruff check` and `uv run pytest`) locally to ensure the codebase stays healthy.
 3. Update documentation and tests alongside code changes.
 4. Open a pull request that clearly states the problem being solved and the solution you implemented.
+
+## Running tests and checks
+```bash
+# Install dependencies
+uv sync --all-extras
+
+# Run all checks (recommended before committing)
+make check
+
+# Or run individually
+uv run ruff check          # Linting
+uv run mypy src            # Type checking
+uv run bandit -r src/      # Security checks
+uv run pytest              # Tests
+
+# Run specific test files
+uv run pytest tests/test_config_loader.py -v
+```
 
 ## Code style and quality
 - Follow the style enforced by Ruff and the Python standard library.

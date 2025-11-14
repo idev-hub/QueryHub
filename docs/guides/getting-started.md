@@ -6,9 +6,14 @@ Welcome to QueryHub! This walkthrough shows how to install the project locally, 
 ```bash
 git clone https://github.com/isasnovich/QueryHub.git
 cd QueryHub
-python -m venv .venv
-source .venv/bin/activate
-pip install -e .[dev]
+
+# Install uv if not already installed
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Create virtual environment and install dependencies
+uv venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+uv sync --all-extras
 ```
 
 ## 2. Review the configuration tree

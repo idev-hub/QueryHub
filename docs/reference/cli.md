@@ -1,6 +1,6 @@
 # CLI Reference
 
-QueryHub ships with a Typer-based CLI that exposes report execution and discovery commands. Install the package (`pip install -e .`) to make the `queryhub` command available.
+QueryHub ships with a Typer-based CLI that exposes report execution and discovery commands. Install the package with uv (`uv sync`) to make the `queryhub` command available.
 
 ## `run-report`
 Execute a configured report, render the HTML output, and optionally send it via SMTP.

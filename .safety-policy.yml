@@ -1,0 +1,23 @@
+# Safety vulnerability scanner configuration
+# https://docs.safetycli.com/safety-docs/
+
+security:
+  # Ignore vulnerabilities below this severity level
+  # Supported values: low, medium, high, critical
+  ignore-severity-below: medium
+
+  # Ignore specific vulnerabilities (use with caution)
+  ignore-vulnerabilities:
+    # Example: ignore development/transitive dependencies
+    # 12345:
+    #   reason: "False positive - not exploitable in our use case"
+    #   expires: "2025-12-31"
+
+  # Continue on error (useful for CI)
+  continue-on-error: false
+
+# Ignore CVEs in system/global packages not managed by this project
+ignore-packages:
+  # These are system-wide packages not part of QueryHub
+  - django  # Not a QueryHub dependency
+  - pillow  # Kaleido dependency, managed separately
