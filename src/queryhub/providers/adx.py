@@ -6,7 +6,8 @@ import asyncio
 from typing import Any, Mapping
 
 from ..config.models import ADXProviderConfig, CredentialType, ManagedIdentityCredential
-from .base import ProviderExecutionError, QueryProvider, QueryResult
+from ..core.errors import ProviderExecutionError, ProviderInitializationError
+from .base import QueryProvider, QueryResult
 
 
 class ADXQueryProvider(QueryProvider):
@@ -70,7 +71,7 @@ class ADXQueryProvider(QueryProvider):
             from azure.kusto.data.aio import KustoClient
         except ImportError as exc:
             self._raise_missing_dependency("azure-kusto-data", extras="adx")
-            raise ProviderExecutionError("Azure Kusto dependency missing") from exc
+            raise ProviderInitializationError("Azure Kusto dependency missing") from exc
 
         credential = self.config.credentials
         cluster_uri = self.config.cluster_uri

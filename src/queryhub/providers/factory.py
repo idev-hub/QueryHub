@@ -1,36 +1,30 @@
-"""Factory methods for provider instances."""
+"""Backward-compatible wrapper for provider factories."""
 
 from __future__ import annotations
 
-from typing import Dict
+from typing import TYPE_CHECKING, Dict
 
-from ..config.models import ProviderConfig, ProviderType
-from .adx import ADXQueryProvider
+from ..config.models import ProviderConfig
 from .base import QueryProvider
-from .csv import CSVQueryProvider
-from .rest import RESTQueryProvider
-from .sql import SQLQueryProvider
+
+if TYPE_CHECKING:  # pragma: no cover - typing only
+    from ..core.providers import ProviderRegistry
 
 
 class ProviderFactory:
-    """Instantiate providers keyed by configuration entries."""
+    """Instantiate providers keyed by configuration entries (legacy wrapper)."""
 
-    _registry = {
-        ProviderType.ADX: ADXQueryProvider,
-        ProviderType.SQL: SQLQueryProvider,
-        ProviderType.REST: RESTQueryProvider,
-        ProviderType.CSV: CSVQueryProvider,
-    }
+    def __init__(
+        self,
+        provider_configs: Dict[str, ProviderConfig],
+        registry: "ProviderRegistry" | None = None,
+    ) -> None:
+        from ..core.providers import DefaultProviderFactory, build_default_provider_registry
 
-    def __init__(self, provider_configs: Dict[str, ProviderConfig]) -> None:
-        self._configs = provider_configs
+        self._factory = DefaultProviderFactory(
+            provider_configs,
+            registry or build_default_provider_registry(),
+        )
 
     def create(self, provider_id: str) -> QueryProvider:
-        config = self._configs.get(provider_id)
-        if config is None:
-            raise KeyError(f"Provider '{provider_id}' is not defined")
-
-        provider_cls = self._registry.get(config.type)
-        if provider_cls is None:
-            raise KeyError(f"No provider registered for type {config.type!r}")
-        return provider_cls(config)
+        return self._factory.create(provider_id)

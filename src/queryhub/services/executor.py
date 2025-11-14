@@ -4,35 +4,21 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import time
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List
 
-from ..config import ConfigLoader
-from ..config.models import QueryComponentConfig, ReportConfig, SMTPConfig, Settings
-from ..providers import ProviderFactory, ProviderExecutionError, QueryProvider, QueryResult
-from ..rendering import RendererRegistry, build_environment
+from ..config.models import ReportConfig, SMTPConfig, Settings
+from ..core.contracts import ProviderFactoryProtocol, RendererResolverProtocol, ReportTemplateEngine
+from .component_executor import ComponentExecutionResult, ComponentExecutor, ProviderResolver
 
 _LOGGER = logging.getLogger(__name__)
 
 
-@dataclass(slots=True)
-class ComponentExecutionResult:
-    """Result of executing a report component."""
-
-    component: QueryComponentConfig
-    result: QueryResult | None
-    rendered_html: str | None
-    error: Exception | None
-    attempts: int
-    duration_seconds: float
-
-
-@dataclass(slots=True)
+@dataclass(slots=True, frozen=True)
 class ReportExecutionResult:
-    """Aggregate outcome for a report run."""
+    """Aggregate outcome for a report run (immutable)."""
 
     report: ReportConfig
     generated_at: datetime
@@ -42,26 +28,38 @@ class ReportExecutionResult:
 
     @property
     def has_failures(self) -> bool:
-        return any(item.error for item in self.components)
+        """Check if any component failed."""
+        return any(not item.is_success for item in self.components)
+
+    @property
+    def success_count(self) -> int:
+        """Count successful components."""
+        return sum(1 for item in self.components if item.is_success)
+
+    @property
+    def failure_count(self) -> int:
+        """Count failed components."""
+        return len(self.components) - self.success_count
 
 
 class ReportExecutor:
-    """High level interface for producing HTML reports."""
+    """High level interface for producing HTML reports (follows SRP)."""
 
     def __init__(
         self,
         settings: Settings,
-        templates_dir: Path,
         *,
-        auto_reload_templates: bool = False,
+        provider_factory: ProviderFactoryProtocol,
+        renderer_resolver: RendererResolverProtocol,
+        template_engine: ReportTemplateEngine,
     ) -> None:
         self._settings = settings
-        self._provider_factory = ProviderFactory(settings.providers)
-        self._providers: dict[str, QueryProvider] = {}
-        self._renderer_registry = RendererRegistry()
-        self._templates_dir = Path(templates_dir)
-        self._jinja_env = build_environment(self._templates_dir, auto_reload=auto_reload_templates)
-        self._lock = asyncio.Lock()
+        self._template_engine = template_engine
+        self._provider_resolver = ProviderResolver(provider_factory)
+        self._component_executor = ComponentExecutor(
+            self._provider_resolver,
+            renderer_resolver,
+        )
 
     @classmethod
     async def from_config_dir(
@@ -71,23 +69,78 @@ class ReportExecutor:
         templates_dir: Path | str,
         auto_reload_templates: bool = False,
     ) -> "ReportExecutor":
-        loader = ConfigLoader(Path(config_dir))
-        settings = await loader.load()
-        return cls(settings, Path(templates_dir), auto_reload_templates=auto_reload_templates)
+        """Factory method for creating executor from config directory."""
+        from .application import QueryHubApplicationBuilder
+
+        builder = QueryHubApplicationBuilder(
+            config_dir=Path(config_dir),
+            templates_dir=Path(templates_dir),
+            auto_reload_templates=auto_reload_templates,
+        )
+        return await builder.create_executor()
 
     async def execute_report(self, report_id: str) -> ReportExecutionResult:
+        """Execute a complete report with all components."""
+        report = self._get_report(report_id)
+        components = await self._execute_components(report)
+        html = await self._render_report(report, components)
+        
+        return self._build_result(report, components, html)
+
+    @property
+    def settings(self) -> Settings:
+        """Expose loaded settings for downstream consumers."""
+        return self._settings
+
+    @property
+    def smtp_config(self) -> SMTPConfig:
+        """Convenience accessor for SMTP configuration."""
+        return self._settings.smtp
+
+    async def shutdown(self) -> None:
+        """Cleanup all resources."""
+        await self._provider_resolver.close_all()
+
+    def _get_report(self, report_id: str) -> ReportConfig:
+        """Retrieve report configuration."""
         report = self._settings.reports.get(report_id)
         if report is None:
             raise KeyError(f"Report '{report_id}' not found")
+        return report
 
-        tasks = [self._run_component(report, component) for component in report.components]
-        component_results = await asyncio.gather(*tasks)
+    async def _execute_components(
+        self,
+        report: ReportConfig,
+    ) -> List[ComponentExecutionResult]:
+        """Execute all report components in parallel."""
+        tasks = [
+            self._component_executor.execute(component)
+            for component in report.components
+        ]
+        return await asyncio.gather(*tasks)
 
-        component_payloads: list[dict[str, Any]] = []
-        rendered_components: list[ComponentExecutionResult] = []
-        for item in component_results:
-            rendered_components.append(item)
-            component_payloads.append(
+    async def _render_report(
+        self,
+        report: ReportConfig,
+        components: List[ComponentExecutionResult],
+    ) -> str:
+        """Render the full report HTML."""
+        component_payloads = self._build_component_payloads(components)
+        context = {
+            "report": report,
+            "generated_at": datetime.now(tz=timezone.utc),
+            "components": component_payloads,
+        }
+        return await self._template_engine.render(report, context)
+
+    def _build_component_payloads(
+        self,
+        components: List[ComponentExecutionResult],
+    ) -> list[dict[str, Any]]:
+        """Transform component results into template context."""
+        payloads: list[dict[str, Any]] = []
+        for item in components:
+            payloads.append(
                 {
                     "id": item.component.id,
                     "title": item.component.title,
@@ -97,102 +150,24 @@ class ReportExecutor:
                     "data": item.result.data if item.result else None,
                 }
             )
+        return payloads
 
-        context = {
-            "report": report,
-            "generated_at": datetime.now(tz=timezone.utc),
-            "components": component_payloads,
-        }
-        template = self._jinja_env.get_template(report.template)
-        html = await template.render_async(context)
-
-        generated_at = context["generated_at"]
+    def _build_result(
+        self,
+        report: ReportConfig,
+        components: List[ComponentExecutionResult],
+        html: str,
+    ) -> ReportExecutionResult:
+        """Build final execution result."""
         metadata = {
-            "component_count": len(component_results),
-            "failures": [item.component.id for item in component_results if item.error],
+            "component_count": len(components),
+            "failures": [item.component.id for item in components if not item.is_success],
+            "total_duration": sum(item.duration_seconds for item in components),
         }
         return ReportExecutionResult(
             report=report,
-            generated_at=generated_at,
+            generated_at=datetime.now(tz=timezone.utc),
             html=html,
-            components=rendered_components,
+            components=components,
             metadata=metadata,
         )
-
-    @property
-    def settings(self) -> Settings:
-        """Expose loaded settings for downstream consumers."""
-
-        return self._settings
-
-    @property
-    def smtp_config(self) -> SMTPConfig:
-        """Convenience accessor for SMTP configuration."""
-
-        return self._settings.smtp
-
-    async def shutdown(self) -> None:
-        for provider in self._providers.values():
-            try:
-                await provider.close()
-            except Exception as exc:  # noqa: BLE001
-                _LOGGER.warning("Failed to close provider %s: %s", provider, exc)
-
-    async def _run_component(
-        self, report: ReportConfig, component: QueryComponentConfig
-    ) -> ComponentExecutionResult:
-        start = time.perf_counter()
-        attempts = 0
-        provider = await self._resolve_provider(component.provider_id)
-        timeout = component.timeout_seconds or provider.config.default_timeout_seconds
-        max_attempts = component.retries if component.retries is not None else provider.config.retry_attempts
-        backoff = provider.config.retry_backoff_seconds
-        error: Exception | None = None
-        result: QueryResult | None = None
-
-        for attempt in range(max_attempts or 1):
-            attempts = attempt + 1
-            try:
-                coro = provider.execute(component.query)
-                result = await asyncio.wait_for(coro, timeout=timeout) if timeout else await coro
-                error = None
-                break
-            except asyncio.TimeoutError as exc:
-                error = ProviderExecutionError(f"Component '{component.id}' timed out")
-                _LOGGER.error("Timeout executing component %s: %s", component.id, exc)
-            except Exception as exc:  # noqa: BLE001
-                error = ProviderExecutionError(f"Component '{component.id}' failed: {exc}")
-                _LOGGER.exception("Error executing component %s", component.id)
-            if attempt < (max_attempts - 1):
-                await asyncio.sleep(backoff * (attempt + 1))
-
-        rendered_html: str | None = None
-        if not error and result is not None:
-            try:
-                renderer = self._renderer_registry.resolve(component.render)
-                rendered_html = renderer.render(component, result)
-            except Exception as exc:  # noqa: BLE001
-                error = ProviderExecutionError(f"Rendering failed: {exc}")
-                _LOGGER.exception("Rendering failure for component %s", component.id)
-
-        duration = time.perf_counter() - start
-        return ComponentExecutionResult(
-            component=component,
-            result=result,
-            rendered_html=rendered_html,
-            error=error,
-            attempts=attempts,
-            duration_seconds=duration,
-        )
-
-    async def _resolve_provider(self, provider_id: str) -> QueryProvider:
-        provider = self._providers.get(provider_id)
-        if provider is not None:
-            return provider
-        async with self._lock:
-            provider = self._providers.get(provider_id)
-            if provider is not None:
-                return provider
-            provider = self._provider_factory.create(provider_id)
-            self._providers[provider_id] = provider
-        return provider

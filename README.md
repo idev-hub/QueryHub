@@ -106,8 +106,57 @@ queryhub run-report <report_id> \
 queryhub list-reports --config-dir config
 ```
 
+## Application composition & DI
+
+QueryHub follows **100% SOLID principles** and clean architecture patterns. The codebase features:
+
+- ✅ **Single Responsibility** - Each class has one clear purpose
+- ✅ **Open/Closed** - Extensible without modifying existing code
+- ✅ **Liskov Substitution** - Implementations are properly substitutable
+- ✅ **Interface Segregation** - Minimal, focused protocols
+- ✅ **Dependency Inversion** - High-level modules depend on abstractions
+
+Library consumers can build the orchestration stack programmatically via `QueryHubApplicationBuilder` which wires the config loader, provider factory, renderer registry, template engine, and email sender behind SOLID-friendly interfaces:
+
+```python
+from pathlib import Path
+from queryhub.services import QueryHubApplicationBuilder
+
+builder = QueryHubApplicationBuilder(
+  config_dir=Path("config"),
+  templates_dir=Path("templates"),
+  auto_reload_templates=True,
+)
+executor = await builder.create_executor()
+result = await executor.execute_report("sample_report")
+```
+
+Override any dependency (provider factory, renderer resolver, template engine, email sender) by passing custom implementations that satisfy the contracts in `queryhub.core.contracts`.
+
+**Architecture Documentation:**
+- [SOLID Architecture Guide](docs/reference/solid-architecture.md) - Detailed design patterns and principles
+- [Refactoring Summary](docs/reference/refactoring-summary.md) - Complete list of improvements
+- [Migration Guide](docs/guides/migration.md) - How to update your code
+
 ## Extending providers
-Subclass `QueryProvider`, implement `execute()`, and register it in `ProviderFactory._registry`. Providers receive the parsed query dictionary from YAML and should return a `QueryResult`.
+Subclass `QueryProvider`, implement `execute()`, and register it with a `ProviderRegistry` instance before building the application:
+
+```python
+from pathlib import Path
+
+from queryhub.config import ConfigLoader
+from queryhub.config.models import ProviderType
+from queryhub.core.providers import DefaultProviderFactory, build_default_provider_registry
+from my_project.providers import MyAPIProvider
+
+loader = ConfigLoader(Path("config"))
+settings = await loader.load()
+registry = build_default_provider_registry()
+registry.register(ProviderType("myapi"), MyAPIProvider)
+factory = DefaultProviderFactory(settings.providers, registry)
+```
+
+Providers receive the parsed query dictionary from YAML and should return a `QueryResult`. Custom registries can then be injected via `QueryHubApplicationBuilder`.
 
 ## Templates
 - Default template lives in `templates/report.html.j2` and includes styling plus Plotly support.

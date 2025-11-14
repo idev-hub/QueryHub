@@ -8,7 +8,8 @@ from pathlib import Path
 from typing import Any, Mapping
 
 from ..config.models import CSVProviderConfig
-from .base import ProviderExecutionError, QueryProvider, QueryResult
+from ..core.errors import ProviderExecutionError
+from .base import QueryProvider, QueryResult
 
 
 class CSVQueryProvider(QueryProvider):

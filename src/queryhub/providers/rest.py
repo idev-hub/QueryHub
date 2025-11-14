@@ -7,7 +7,8 @@ from typing import Any, Mapping
 from urllib.parse import urljoin
 
 from ..config.models import CredentialType, RESTProviderConfig, TokenCredential
-from .base import ProviderExecutionError, QueryProvider, QueryResult
+from ..core.errors import ProviderExecutionError
+from .base import QueryProvider, QueryResult
 
 
 class RESTQueryProvider(QueryProvider):

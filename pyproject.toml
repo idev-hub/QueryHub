@@ -67,3 +67,6 @@ line-length = 100
 minversion = "7.0"
 addopts = "-ra"
 testpaths = ["tests"]
+markers = [
+  "integration: marks tests as integration tests (deselect with '-m \"not integration\"')",
+]

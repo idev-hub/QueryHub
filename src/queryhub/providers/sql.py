@@ -16,7 +16,8 @@ from ..config.models import (
     SQLProviderTarget,
     UsernamePasswordCredential,
 )
-from .base import ProviderExecutionError, QueryProvider, QueryResult
+from ..core.errors import ProviderExecutionError
+from .base import QueryProvider, QueryResult
 
 
 class SQLQueryProvider(QueryProvider):

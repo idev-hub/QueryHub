@@ -1,0 +1,267 @@
+```
+QueryHub Docker Integration Test Architecture
+==============================================
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│                          Developer Machine                              │
+│                                                                         │
+│  ┌───────────────────────────────────────────────────────────────┐    │
+│  │  Test Execution Layer                                         │    │
+│  │                                                                │    │
+│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐       │    │
+│  │  │ pytest CLI   │  │ Make targets │  │ Helper Script│       │    │
+│  │  │              │  │              │  │              │       │    │
+│  │  │ • -m         │  │ • make       │  │ • ./scripts/ │       │    │
+│  │  │   integration│  │   test-int   │  │   integration│       │    │
+│  │  │ • -v -s      │  │ • make       │  │   _test.sh   │       │    │
+│  │  │ • -k pattern │  │   docker-up  │  │   start      │       │    │
+│  │  └──────────────┘  └──────────────┘  └──────────────┘       │    │
+│  │                           │                                   │    │
+│  └───────────────────────────┼───────────────────────────────────┘    │
+│                              │                                         │
+│  ┌───────────────────────────▼───────────────────────────────────┐    │
+│  │  Test Implementation (test_docker_integration.py)             │    │
+│  │                                                                │    │
+│  │  @pytest.mark.integration                                     │    │
+│  │  async def test_postgres_sales_report():                      │    │
+│  │      ├─ Check Docker running                                  │    │
+│  │      ├─ Wait for PostgreSQL ready                             │    │
+│  │      ├─ Load config from fixtures                             │    │
+│  │      ├─ Create ReportExecutor                                 │    │
+│  │      ├─ Execute report                                        │    │
+│  │      ├─ Validate results                                      │    │
+│  │      └─ Cleanup                                               │    │
+│  │                                                                │    │
+│  └────────────────────────────┬───────────────────────────────────┘    │
+│                               │                                         │
+│  ┌────────────────────────────▼────────────────────────────────────┐   │
+│  │  QueryHub Application Layer                                    │   │
+│  │                                                                 │   │
+│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐        │   │
+│  │  │ ConfigLoader │→ │ReportExecutor│→ │TemplateEngine│        │   │
+│  │  └──────────────┘  └──────────────┘  └──────────────┘        │   │
+│  │         │                  │                   │               │   │
+│  │         ▼                  ▼                   ▼               │   │
+│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐        │   │
+│  │  │ProviderConfig│  │SQLProvider   │  │ Jinja2 Env   │        │   │
+│  │  │ - providers  │  │ - connection │  │ - templates  │        │   │
+│  │  │ - reports    │  │ - pool       │  │ - rendering  │        │   │
+│  │  │ - smtp       │  │ - execute()  │  │              │        │   │
+│  │  └──────────────┘  └──────────────┘  └──────────────┘        │   │
+│  │                           │                                    │   │
+│  └───────────────────────────┼────────────────────────────────────┘   │
+│                              │                                         │
+│                              │ SQL Queries                             │
+│                              │ asyncpg/SQLAlchemy                      │
+└──────────────────────────────┼─────────────────────────────────────────┘
+                               │
+                               │ Port 5433
+                               │ postgresql://testuser:testpass@
+                               │ localhost:5433/testdb
+                               ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│                        Docker Environment                               │
+│                                                                         │
+│  ┌───────────────────────────────────────────────────────────────┐    │
+│  │  PostgreSQL Container (queryhub-test-postgres)                │    │
+│  │                                                                │    │
+│  │  ┌──────────────────────────────────────────────────────┐    │    │
+│  │  │  PostgreSQL 16                                       │    │    │
+│  │  │  ┌────────────────────────────────────────────┐     │    │    │
+│  │  │  │  Database: testdb                          │     │    │    │
+│  │  │  │  User: testuser / testpass                 │     │    │    │
+│  │  │  │                                             │     │    │    │
+│  │  │  │  Tables:                                   │     │    │    │
+│  │  │  │  ┌─────────────────────────────┐          │     │    │    │
+│  │  │  │  │ sales_metrics (10 rows)     │          │     │    │    │
+│  │  │  │  │ - id, region, product       │          │     │    │    │
+│  │  │  │  │ - revenue, units_sold       │          │     │    │    │
+│  │  │  │  │ - sale_date, created_at     │          │     │    │    │
+│  │  │  │  └─────────────────────────────┘          │     │    │    │
+│  │  │  │  ┌─────────────────────────────┐          │     │    │    │
+│  │  │  │  │ customer_feedback (8 rows)  │          │     │    │    │
+│  │  │  │  │ - id, customer_name         │          │     │    │    │
+│  │  │  │  │ - product, rating, comment  │          │     │    │    │
+│  │  │  │  │ - feedback_date             │          │     │    │    │
+│  │  │  │  └─────────────────────────────┘          │     │    │    │
+│  │  │  │  ┌─────────────────────────────┐          │     │    │    │
+│  │  │  │  │ system_health (5 rows)      │          │     │    │    │
+│  │  │  │  │ - id, service_name, status  │          │     │    │    │
+│  │  │  │  │ - response_time_ms          │          │     │    │    │
+│  │  │  │  │ - error_count, timestamp    │          │     │    │    │
+│  │  │  │  └─────────────────────────────┘          │     │    │    │
+│  │  │  │                                             │     │    │    │
+│  │  │  │  Initialized by:                           │     │    │    │
+│  │  │  │  /docker-entrypoint-initdb.d/init.sql     │     │    │    │
+│  │  │  └────────────────────────────────────────────┘     │    │    │
+│  │  │                                                      │    │    │
+│  │  │  Health Check: pg_isready -U testuser -d testdb    │    │    │
+│  │  │  Port Mapping: 5433:5432                            │    │    │
+│  │  └──────────────────────────────────────────────────────┘    │    │
+│  │                                                                │    │
+│  └────────────────────────────────────────────────────────────────┘    │
+│                                                                         │
+│  ┌───────────────────────────────────────────────────────────────┐    │
+│  │  SQL Server Container (queryhub-test-sqlserver) [Optional]   │    │
+│  │  - Port: 1434:1433                                            │    │
+│  │  - SA_PASSWORD: TestPass123!                                  │    │
+│  └───────────────────────────────────────────────────────────────┘    │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+
+
+Test Data Flow
+==============
+
+1. docker-compose up -d
+   └─> Starts PostgreSQL container
+   └─> Mounts init-postgres.sql
+   └─> Executes SQL on first run
+   └─> Creates tables and inserts data
+
+2. Test execution
+   └─> pytest runs test_docker_integration.py
+   └─> Checks Docker/containers running
+   └─> Waits for PostgreSQL ready
+   └─> Sets POSTGRES_DSN env var
+
+3. Config loading
+   └─> Loads tests/fixtures/docker_integration/
+       ├─> smtp.yaml
+       ├─> providers/providers.yaml
+       └─> reports/sales_dashboard.yaml
+
+4. Report execution
+   └─> ReportExecutor.from_config_dir()
+   └─> Initializes SQLProvider
+   └─> Creates connection pool (asyncpg)
+   └─> Executes 6 component queries
+   └─> Renders each component
+   └─> Compiles HTML report
+
+5. Validation
+   └─> Assert no failures
+   └─> Check HTML content
+   └─> Verify data in components
+   └─> Validate query results
+
+6. Cleanup
+   └─> executor.shutdown()
+   └─> Close connections
+   └─> docker-compose down (optional)
+
+
+File Structure
+==============
+
+QueryHub/
+├── docker-compose.test.yml          ← Container definitions
+├── Makefile                          ← Convenience targets
+├── INTEGRATION_TESTS.md              ← Quick start guide
+│
+├── .github/workflows/
+│   └── integration-tests.yml         ← CI/CD workflow
+│
+├── scripts/
+│   ├── integration_test.sh           ← Helper script
+│   └── demo_integration_tests.py     ← Demo/documentation
+│
+├── tests/
+│   ├── test_docker_integration.py    ← Test implementation
+│   │
+│   └── fixtures/
+│       ├── docker/
+│       │   └── init-postgres.sql     ← Database init
+│       │
+│       └── docker_integration/
+│           ├── README.md             ← Detailed docs
+│           ├── smtp.yaml             ← Email config
+│           ├── providers/
+│           │   └── providers.yaml    ← DB providers
+│           └── reports/
+│               └── sales_dashboard.yaml  ← Report config
+│
+└── docs/reference/
+    └── docker-integration-tests.md   ← Full documentation
+
+
+Commands Quick Reference
+========================
+
+Start & Test:
+  ./scripts/integration_test.sh start
+  ./scripts/integration_test.sh test
+  
+Make Targets:
+  make docker-up
+  make test-integration
+  make postgres-shell
+  make example-sales
+  
+Pytest:
+  pytest tests/test_docker_integration.py -v -m integration
+  pytest tests/test_docker_integration.py::test_postgres_sales_report -v
+  pytest -m "not integration"  # Skip integration tests
+  
+Docker:
+  docker-compose -f docker-compose.test.yml up -d
+  docker-compose -f docker-compose.test.yml down
+  docker exec queryhub-test-postgres psql -U testuser -d testdb
+
+
+Report Components
+=================
+
+sales_dashboard.yaml defines 6 components:
+
+┌─────────────────────────┬───────┬────────────────────────────┐
+│ Component ID            │ Type  │ SQL Query                  │
+├─────────────────────────┼───────┼────────────────────────────┤
+│ sales_by_region         │ Table │ SELECT region, SUM(...)    │
+│                         │       │ GROUP BY region            │
+├─────────────────────────┼───────┼────────────────────────────┤
+│ product_performance     │ Table │ SELECT product, SUM(...)   │
+│                         │       │ GROUP BY product           │
+├─────────────────────────┼───────┼────────────────────────────┤
+│ customer_satisfaction   │ Table │ SELECT product, AVG(...)   │
+│                         │       │ GROUP BY product           │
+├─────────────────────────┼───────┼────────────────────────────┤
+│ recent_feedback         │ Table │ SELECT * ORDER BY date     │
+│                         │       │ LIMIT 5                    │
+├─────────────────────────┼───────┼────────────────────────────┤
+│ system_health           │ Table │ SELECT service, status,... │
+│                         │       │ ORDER BY status, name      │
+├─────────────────────────┼───────┼────────────────────────────┤
+│ daily_sales             │ Chart │ SELECT date, SUM(revenue)  │
+│                         │       │ GROUP BY date              │
+└─────────────────────────┴───────┴────────────────────────────┘
+
+Each component:
+- Executes independently
+- Has its own query
+- Can be table or chart
+- Includes formatting options
+- Validates data presence
+
+
+Test Coverage Summary
+=====================
+
+✓ Database connectivity
+✓ Schema validation
+✓ Query execution (simple, parameterized, aggregated)
+✓ Connection pooling
+✓ Concurrent queries
+✓ Config loading (YAML, env vars)
+✓ Provider initialization
+✓ Report rendering
+✓ HTML generation
+✓ Error handling
+✓ Cleanup and shutdown
+
+Total: 5 comprehensive test functions
+       20+ assertion points
+       6 report components
+       3 database tables
+       100+ lines of test data
+```

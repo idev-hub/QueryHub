@@ -89,4 +89,5 @@ QueryHub will execute the report, render the HTML, and deliver it using the SMTP
 ## Next steps
 - Add scheduling metadata (`schedule.cron`) to reports for external schedulers.
 - Implement additional providers by subclassing `queryhub.providers.base.QueryProvider`.
+- Embed QueryHub in another service with `QueryHubApplicationBuilder` to plug custom factories or template engines.
 - Explore the CLI reference for more commands and flags.

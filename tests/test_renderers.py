@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from queryhub.config.models import ComponentRenderConfig, ComponentRendererType, QueryComponentConfig
 from queryhub.providers.base import QueryResult
-from queryhub.rendering.renderers import RendererRegistry, TextRenderer
+from queryhub.rendering.renderers import RendererRegistry, TableRenderer, TextRenderer
 
 
 def _build_component(render_config: ComponentRenderConfig) -> QueryComponentConfig:
@@ -37,6 +37,7 @@ def test_text_renderer_value_path() -> None:
 
 def test_renderer_registry_table() -> None:
     registry = RendererRegistry()
+    registry.register(ComponentRendererType.TABLE, TableRenderer())
     render_config = ComponentRenderConfig(type=ComponentRendererType.TABLE, options={})
     renderer = registry.resolve(render_config)
     assert renderer is not None

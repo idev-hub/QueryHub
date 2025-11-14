@@ -140,6 +140,7 @@ class ComponentRendererType(str, Enum):
     TABLE = "table"
     CHART = "chart"
     TEXT = "text"
+    HTML = "html"
 
 
 class ComponentRenderConfig(BaseModel):
