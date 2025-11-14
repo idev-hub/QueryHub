@@ -4,8 +4,6 @@ Demo script to show integration test workflow and sample output.
 This script demonstrates the integration test capabilities without requiring Docker.
 """
 
-import textwrap
-
 
 def print_section(title: str, content: str = "") -> None:
     """Print a formatted section."""

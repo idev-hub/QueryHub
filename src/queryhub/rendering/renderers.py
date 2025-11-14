@@ -250,7 +250,7 @@ class TextRenderer(ComponentRenderer):
             # Then apply the format
             formatted = template.format(value=value)
             return formatted
-        except (ValueError, KeyError) as exc:
+        except (ValueError, KeyError):
             # If formatting fails, return the value as-is
             return str(value)
 

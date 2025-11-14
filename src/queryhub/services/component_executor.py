@@ -6,11 +6,10 @@ import asyncio
 import logging
 import time
 from dataclasses import dataclass
-from typing import Any
 
 from ..config.models import QueryComponentConfig
 from ..core.contracts import ProviderFactoryProtocol, RendererResolverProtocol
-from ..core.errors import ProviderExecutionError, ExecutionTimeoutError, RenderingError
+from ..core.errors import ExecutionTimeoutError, RenderingError
 from ..core.retry import ExponentialBackoffRetry, RetryPolicy
 from ..providers import QueryProvider, QueryResult
 

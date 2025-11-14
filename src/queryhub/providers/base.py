@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from typing import Any, Mapping, MutableMapping
 
 from ..config.models import BaseProviderConfig
-from ..core.errors import ProviderExecutionError, ProviderInitializationError
+from ..core.errors import ProviderInitializationError
 
 
 @dataclass(slots=True, frozen=True)

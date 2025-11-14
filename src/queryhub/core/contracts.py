@@ -9,7 +9,7 @@ from ..config.models import ComponentRenderConfig, ReportConfig, ReportEmailConf
 if TYPE_CHECKING:  # pragma: no cover - import guard
     from ..providers.base import QueryProvider
     from ..rendering.renderers import ComponentRenderer
-    from ..services.executor import ComponentExecutionResult, ReportExecutionResult
+    from ..services.executor import ReportExecutionResult
 
 
 class ConfigLoaderProtocol(Protocol):
