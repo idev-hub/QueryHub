@@ -39,20 +39,38 @@ jobs:
         docker compose -f docker-compose.test.yml up -d
         echo "Waiting for PostgreSQL to be ready..."
 
-    - name: Wait for PostgreSQL
+    - name: Wait for PostgreSQL and verify initialization
       run: |
-        for i in {1..30}; do
-          docker exec queryhub-test-postgres pg_isready -U testuser -d testdb && break
-          echo "Waiting for PostgreSQL... ($i/30)"
+        echo "Waiting for PostgreSQL to accept connections..."
+        for i in {1..60}; do
+          if docker exec queryhub-test-postgres pg_isready -U testuser -d testdb > /dev/null 2>&1; then
+            echo "PostgreSQL is accepting connections"
+            break
+          fi
+          echo "Waiting for PostgreSQL... ($i/60)"
           sleep 2
         done
-        docker exec queryhub-test-postgres pg_isready -U testuser -d testdb
-
-    - name: Verify test data
-      run: |
+        
+        echo "Waiting for database initialization to complete..."
+        sleep 5
+        
+        echo "Verifying tables exist and contain data..."
+        for i in {1..30}; do
+          COUNT=$(docker exec queryhub-test-postgres psql -U testuser -d testdb -t -c "SELECT COUNT(*) FROM sales_metrics;" 2>/dev/null | tr -d ' ')
+          if [ ! -z "$COUNT" ] && [ "$COUNT" -gt "0" ]; then
+            echo "Database initialization complete. Found $COUNT records in sales_metrics."
+            break
+          fi
+          echo "Waiting for data initialization... ($i/30)"
+          sleep 2
+        done
+        
+        echo "Verifying all test data..."
         docker exec queryhub-test-postgres psql -U testuser -d testdb -c "SELECT COUNT(*) FROM sales_metrics;"
         docker exec queryhub-test-postgres psql -U testuser -d testdb -c "SELECT COUNT(*) FROM customer_feedback;"
         docker exec queryhub-test-postgres psql -U testuser -d testdb -c "SELECT COUNT(*) FROM system_health;"
+        
+        echo "Database is ready for tests!"
 
     - name: Run unit tests
       run: |
