@@ -8,7 +8,7 @@ from typing import Any, Iterable, Mapping
 
 from ..config.models import ComponentRenderConfig, ComponentRendererType, QueryComponentConfig
 from ..core.errors import RenderingError
-from ..providers.base import QueryResult
+from ..providers.base_query_provider import QueryResult
 
 
 class ComponentRenderer(ABC):
@@ -47,7 +47,9 @@ class DataExtractor:
         return []
 
     @staticmethod
-    def extract_columns(data: list[Mapping[str, Any]], specified_columns: list[str] | None = None) -> list[str]:
+    def extract_columns(
+        data: list[Mapping[str, Any]], specified_columns: list[str] | None = None
+    ) -> list[str]:
         """Extract column names from data."""
         if specified_columns:
             return specified_columns
@@ -118,9 +120,7 @@ class TableRenderer(ComponentRenderer):
         """Build table body rows."""
         rows = []
         for row in records:
-            cells = "".join(
-                f"<td>{self._escape(row.get(col, ''))}</td>" for col in columns
-            )
+            cells = "".join(f"<td>{self._escape(row.get(col, ''))}</td>" for col in columns)
             rows.append(f"<tr>{cells}</tr>")
         return "".join(rows)
 
@@ -142,19 +142,19 @@ class ChartRenderer(ComponentRenderer):
         chart_type = options.get("chart_type", "bar")
         x_field = options.get("x_field")
         y_field = options.get("y_field")
-        
+
         if not x_field or not y_field:
             raise RenderingError("Chart renderer requires 'x_field' and 'y_field' options")
 
         figure = self._create_chart(records, chart_type, x_field, y_field, options, component.title)
-        
+
         if self._email_mode:
             # Convert to static image for email compatibility
             html_snippet = self._figure_to_static_html(figure, component.title)
         else:
             # Interactive HTML with JavaScript
             html_snippet = figure.to_html(include_plotlyjs=False, full_html=False)
-        
+
         return f'<div class="component component-chart">{html_snippet}</div>'
 
     def _create_chart(
@@ -170,9 +170,7 @@ class ChartRenderer(ComponentRenderer):
         try:
             import plotly.express as px  # type: ignore[import-untyped]
         except ImportError as exc:
-            raise RenderingError(
-                "Plotly dependency missing. Install the 'charts' extra."
-            ) from exc
+            raise RenderingError("Plotly dependency missing. Install the 'charts' extra.") from exc
 
         chart_func = getattr(px, chart_type, None)
         if chart_func is None:
@@ -186,13 +184,13 @@ class ChartRenderer(ComponentRenderer):
         try:
             import plotly.io as pio  # type: ignore[import-untyped]
             import base64
-            
+
             # Export figure as PNG image
             img_bytes = pio.to_image(figure, format="png", width=800, height=500)
-            
+
             # Convert to base64 for embedding in HTML
-            img_base64 = base64.b64encode(img_bytes).decode('utf-8')
-            
+            img_base64 = base64.b64encode(img_bytes).decode("utf-8")
+
             # Create HTML with embedded image
             title_html = f"<h3>{self._escape(title or 'Chart')}</h3>" if title else ""
             return f'{title_html}<img src="data:image/png;base64,{img_base64}" alt="{self._escape(title or "Chart")}" style="max-width: 100%; height: auto;" />'
@@ -210,14 +208,15 @@ class TextRenderer(ComponentRenderer):
         """Render text content with optional templating."""
         options = component.render.options
         value = self._extract_value(result.data, options)
-        
+
         if isinstance(value, (dict, list)):
             import json
+
             value = json.dumps(value, indent=2)
 
         body = self._format_text(value, options)
         title = self._escape(component.title or component.id)
-        
+
         return (
             '<div class="component component-text">'
             f"<h3>{title}</h3>"
@@ -228,18 +227,18 @@ class TextRenderer(ComponentRenderer):
     def _extract_value(self, data: Any, options: Mapping[str, Any]) -> Any:
         """Extract value from data using path or key."""
         value_path = options.get("value_path")
-        
+
         # If data is a list of records, get the first one
         if isinstance(data, list) and data:
             data = data[0]
-        
+
         if value_path:
             return self._extractor.traverse_path(data, value_path)
-        
+
         if isinstance(data, Mapping):
             value_key = options.get("value_key", "value")
             return data.get(value_key)
-        
+
         return data
 
     def _format_text(self, value: Any, options: Mapping[str, Any]) -> str:
@@ -267,19 +266,19 @@ class HtmlRenderer(ComponentRenderer):
 
         options = component.render.options
         template_str = options.get("template", "")
-        
+
         if not template_str:
             return self._render_empty_state("No HTML template provided", "component-html")
 
         # Prepare data for template
         records = self._extractor.ensure_rows(result.data)
-        
+
         # If there's a single row and data is expected to be extracted, provide both
         context = {
             "data": records,
             "result": result.data,
         }
-        
+
         # Add individual fields from first row if available
         if records and len(records) == 1:
             context.update(records[0])
@@ -288,7 +287,7 @@ class HtmlRenderer(ComponentRenderer):
             template = Template(template_str)
             rendered_html = template.render(**context)
             title = self._escape(component.title or component.id)
-            
+
             return (
                 '<div class="component component-html">'
                 f"<h3>{title}</h3>"
@@ -302,7 +301,9 @@ class HtmlRenderer(ComponentRenderer):
 class RendererRegistry:
     """Map renderer types to concrete implementations (Registry Pattern)."""
 
-    def __init__(self, renderers: Mapping[ComponentRendererType, ComponentRenderer] | None = None) -> None:
+    def __init__(
+        self, renderers: Mapping[ComponentRendererType, ComponentRenderer] | None = None
+    ) -> None:
         self._renderers: dict[ComponentRendererType, ComponentRenderer] = dict(renderers or {})
 
     def register(self, renderer_type: ComponentRendererType, renderer: ComponentRenderer) -> None:
@@ -319,7 +320,7 @@ class RendererRegistry:
 
 def create_default_renderer_registry(email_mode: bool = False) -> RendererRegistry:
     """Return a renderer registry populated with built-in renderers.
-    
+
     Args:
         email_mode: If True, charts will be rendered as static images for email compatibility.
     """

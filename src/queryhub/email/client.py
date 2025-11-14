@@ -32,19 +32,21 @@ class RecipientResolver:
         report_email = report.email
 
         to_candidates = (
-            overrides.to if overrides and overrides.to else None
-        ) or (report_email.to if report_email and report_email.to else None) or self._smtp_config.default_to
+            (overrides.to if overrides and overrides.to else None)
+            or (report_email.to if report_email and report_email.to else None)
+            or self._smtp_config.default_to
+        )
 
         if not to_candidates:
             raise EmailError("No email recipients configured")
 
-        cc_candidates = (
-            overrides.cc if overrides and overrides.cc else None
-        ) or (report_email.cc if report_email and report_email.cc else None)
+        cc_candidates = (overrides.cc if overrides and overrides.cc else None) or (
+            report_email.cc if report_email and report_email.cc else None
+        )
 
-        bcc_candidates = (
-            overrides.bcc if overrides and overrides.bcc else None
-        ) or (report_email.bcc if report_email and report_email.bcc else None)
+        bcc_candidates = (overrides.bcc if overrides and overrides.bcc else None) or (
+            report_email.bcc if report_email and report_email.bcc else None
+        )
 
         return (
             self._normalize_addresses(to_candidates),
@@ -118,17 +120,17 @@ class MessageBuilder:
         message = EmailMessage()
         message["From"] = from_address
         message["To"] = ", ".join(to_recipients)
-        
+
         if cc_recipients:
             message["Cc"] = ", ".join(cc_recipients)
-        
+
         if overrides and overrides.reply_to:
             message["Reply-To"] = overrides.reply_to
-        
+
         if bcc_recipients:
             # Include Bcc for testing/debugging (removed before sending)
             message["Bcc"] = ", ".join(bcc_recipients)
-        
+
         message["Subject"] = subject
 
         plain_text = self._build_plain_text(result)
@@ -140,9 +142,8 @@ class MessageBuilder:
     def _resolve_from_address(self, overrides: ReportEmailConfig | None) -> str:
         """Resolve from address."""
         from_address = (
-            (overrides.from_address if overrides else None)
-            or self._smtp_config.default_from
-        )
+            overrides.from_address if overrides else None
+        ) or self._smtp_config.default_from
         if not from_address:
             raise EmailError("SMTP configuration missing 'default_from' address")
         return from_address
@@ -153,11 +154,11 @@ class MessageBuilder:
             f"Report: {result.report.title}",
             f"Generated at: {result.generated_at.isoformat()}",
         ]
-        
+
         if result.metadata.get("failures"):
             failures = ", ".join(result.metadata["failures"])
             lines.append(f"Components with errors: {failures}")
-        
+
         lines.append("\nHTML content attached as alternative body")
         return "\n".join(lines)
 
@@ -194,7 +195,7 @@ class EmailClient(EmailSenderProtocol):
 
         # Extract all recipients
         recipients = self._extract_all_recipients(message)
-        
+
         # Remove Bcc header before sending (RFC compliance)
         if "Bcc" in message:
             del message["Bcc"]
@@ -219,7 +220,7 @@ class EmailClient(EmailSenderProtocol):
         to_recipients = message.get_all("To", [])
         cc_recipients = message.get_all("Cc", [])
         bcc_recipients = message.get_all("Bcc", [])
-        
+
         parsed = getaddresses([*to_recipients, *cc_recipients, *bcc_recipients])
         return [addr for _, addr in parsed if addr]
 

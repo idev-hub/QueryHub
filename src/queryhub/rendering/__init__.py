@@ -5,9 +5,9 @@ from .renderers import ComponentRenderer, RendererRegistry, create_default_rende
 from .template_engine import JinjaReportTemplateEngine
 
 __all__ = [
-	"ComponentRenderer",
-	"RendererRegistry",
-	"JinjaReportTemplateEngine",
-	"build_environment",
-	"create_default_renderer_registry",
+    "ComponentRenderer",
+    "RendererRegistry",
+    "JinjaReportTemplateEngine",
+    "build_environment",
+    "create_default_renderer_registry",
 ]

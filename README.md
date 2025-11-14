@@ -5,12 +5,15 @@
 QueryHub turns declarative YAML configuration into automated, fully rendered HTML email reports. It fans out asynchronous queries to heterogeneous data sources, binds the responses to Jinja2 templates, and delivers the resulting document via SMTP.
 
 ## Highlights
-- **Config-first** – Providers, credentials, report layout, and SMTP definitions live in YAML with environment-variable overrides (`${VAR:default}`) for secrets.
-- **Pluggable data providers** – Built-in adapters for Azure Data Explorer (Kusto), SQL (SQLAlchemy async engines), REST APIs (aiohttp), and local CSV files. New providers subclass `QueryProvider`.
-- **Async execution** – Components run concurrently with configurable timeouts, retries, and exponential backoff.
-- **Templateable HTML** – Reports are rendered with Jinja2 templates; components (tables, charts, text) compose the final document.
-- **Email delivery** – Uses SMTP (via `aiosmtplib`) with TLS/STARTTLS, multiple credential options, and a DKIM stub hook.
-- **CI-ready** – Packaging via `pyproject.toml`, linting with Ruff, typing with mypy, tests with pytest/pytest-asyncio, and a GitHub Actions workflow.
+- **Multi-cloud ready** – Unified architecture supporting Azure, AWS, and GCP with reusable credential entities
+- **Config-first** – Providers, credentials, report layout, and SMTP definitions live in YAML with environment-variable overrides (`${VAR:default}`) for secrets
+- **Credential reusability** – Define credentials once, reference them across multiple providers by ID
+- **Pluggable data providers** – Built-in adapters for Azure Data Explorer (Kusto), SQL (SQLAlchemy async engines), REST APIs (aiohttp), and local CSV files. New providers implement `BaseQueryProvider`
+- **Async execution** – Components run concurrently with configurable timeouts, retries, and exponential backoff
+- **Templateable HTML** – Reports are rendered with Jinja2 templates; components (tables, charts, text) compose the final document
+- **Email delivery** – Uses SMTP (via `aiosmtplib`) with TLS/STARTTLS, multiple credential options, and a DKIM stub hook
+- **SOLID architecture** – Clean separation of concerns with dependency injection and interface-based design
+- **CI-ready** – Packaging via `pyproject.toml`, linting with Ruff, typing with mypy, tests with pytest/pytest-asyncio, and a GitHub Actions workflow
 
 ## Quick start
 ```bash
@@ -62,19 +65,59 @@ subject_template: "{{ title }} – {{ generated_at.strftime('%Y-%m-%d') }}"
 ```
 
 ### Provider definition (`config/providers/providers.yaml`)
+
+The new architecture separates credentials from providers for reusability:
+
 ```yaml
-providers:
-  - id: postgres_reporting
-    type: sql
-    target:
-      dsn: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db.internal/reporting
-    credentials:
+# Define credentials once, organized by cloud provider
+credentials:
+  - id: azure_default_credentials
+    azure:
+      type: default_credentials
+  
+  - id: postgres_credentials
+    postgresql:
       type: username_password
       username: ${POSTGRES_USER}
       password: ${POSTGRES_PASSWORD}
+  
+  - id: rest_api_token
+    generic:
+      type: token
+      token: ${API_TOKEN}
+      header_name: Authorization
+      template: "Bearer {token}"
+
+# Providers reference credentials by ID
+providers:
+  - id: adx_marketing
+    resource:
+      adx:
+        cluster_uri: https://help.kusto.windows.net
+        database: Samples
+        default_timeout_seconds: 60
+    credentials: azure_default_credentials
+  
+  - id: postgres_reporting
+    resource:
+      sql:
+        dsn: postgresql+asyncpg://${POSTGRES_HOST}:${POSTGRES_PORT}/reporting
+    credentials: postgres_credentials
+  
+  - id: rest_weather
+    resource:
+      rest:
+        base_url: https://api.open-meteo.com/v1/
+    credentials: rest_api_token
 ```
 
-ADX, REST, and CSV providers follow the same pattern, each supporting credential types such as managed identity, service principal, username/password, connection string, bearer token, or none.
+**Supported Cloud Providers:**
+- **Azure**: Default credentials, Managed Identity, Service Principal, Token
+- **AWS**: Default credentials, Access Key, IAM Role
+- **GCP**: Default credentials, Service Account
+- **Generic**: Username/Password, Token, Connection String, No credential
+
+See [Multi-Cloud Architecture](docs/reference/new-architecture.md) for detailed information.
 
 ### Report definition (`config/reports/sample_report.yaml`)
 Each component binds to a provider and declares how to render the response.

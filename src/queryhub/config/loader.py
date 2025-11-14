@@ -10,14 +10,19 @@ from typing import Any, Iterable, Mapping
 import yaml
 from pydantic import TypeAdapter
 
+from ..core.credentials import CredentialRegistry
 from ..core.errors import ConfigurationError
+from .converters import convert_provider_config
+from .credential_models import CredentialConfig
 from .environment import EnvironmentSubstitutor
-from .models import ProviderConfig, ReportConfig, Settings, SMTPConfig
+from .models import ReportConfig, Settings, SMTPConfig
+from .provider_models import ProviderConfig
 
 _LOGGER = logging.getLogger(__name__)
 
 _PROVIDER_ADAPTER: TypeAdapter[ProviderConfig] = TypeAdapter(ProviderConfig)
 _REPORT_ADAPTER: TypeAdapter[ReportConfig] = TypeAdapter(ReportConfig)
+_CREDENTIAL_ADAPTER: TypeAdapter[CredentialConfig] = TypeAdapter(CredentialConfig)
 
 
 class YAMLFileReader:
@@ -66,13 +71,11 @@ class YAMLFileReader:
                 extracted = data.get("reports")
                 return self._ensure_list(extracted, origin)
             return [self._ensure_mapping(data, origin)]
-        
+
         if isinstance(data, list):
             return self._ensure_list(data, origin)
-        
-        raise ConfigurationError(
-            f"Unsupported YAML root type in {origin}: {type(data).__name__}"
-        )
+
+        raise ConfigurationError(f"Unsupported YAML root type in {origin}: {type(data).__name__}")
 
     @staticmethod
     def _ensure_list(data: Any, origin: Path) -> list[dict[str, Any]]:
@@ -90,23 +93,26 @@ class YAMLFileReader:
         """Ensure data is a mapping."""
         if isinstance(data, Mapping):
             return dict(data)
-        raise ConfigurationError(
-            f"Expected mapping in {origin}, found {type(data).__name__}"
-        )
+        raise ConfigurationError(f"Expected mapping in {origin}, found {type(data).__name__}")
 
 
 class ConfigParser:
     """Parse and validate configuration data (SRP)."""
 
     @staticmethod
-    def parse_providers(definitions: Iterable[Mapping[str, Any]]) -> dict[str, ProviderConfig]:
-        """Parse provider definitions."""
-        registry: dict[str, ProviderConfig] = {}
+    def parse_providers(definitions: Iterable[Mapping[str, Any]]) -> dict[str, Any]:
+        """Parse provider definitions into type-specific configs.
+
+        Returns dict with both generic and converted configs for compatibility.
+        """
+        registry: dict[str, Any] = {}
         for item in definitions:
             provider = _PROVIDER_ADAPTER.validate_python(item)
             if provider.id in registry:
                 raise ConfigurationError(f"Duplicate provider id '{provider.id}' detected")
-            registry[provider.id] = provider
+            # Convert to type-specific config for providers
+            converted = convert_provider_config(provider)
+            registry[provider.id] = converted
         return registry
 
     @staticmethod
@@ -118,6 +124,30 @@ class ConfigParser:
             if report.id in registry:
                 raise ConfigurationError(f"Duplicate report id '{report.id}' detected")
             registry[report.id] = report
+        return registry
+
+    @staticmethod
+    def parse_credentials(definitions: Iterable[Mapping[str, Any]]) -> CredentialRegistry:
+        """Parse credential definitions into a credential registry.
+
+        Returns CredentialRegistry with all credentials registered.
+        """
+        registry = CredentialRegistry()
+        for item in definitions:
+            credential = _CREDENTIAL_ADAPTER.validate_python(item)
+            if not credential.id:
+                raise ConfigurationError("Credential definitions must have an 'id' field")
+
+            # Determine cloud provider and type from nested structure
+            cloud_provider = credential.get_cloud_provider()
+            credential_type = credential.get_credential_type()
+            credential_config = credential.get_credential_config()
+
+            registry.register(credential.id, cloud_provider, credential_type, credential_config)  # type: ignore[arg-type]
+            _LOGGER.debug(
+                f"Registered credential '{credential.id}' ({cloud_provider}/{credential_type})"
+            )
+
         return registry
 
 
@@ -151,12 +181,19 @@ class ConfigLoader:
         smtp_data = self._load_and_substitute_file(self._root / "smtp.yaml")
         providers_data = self._load_and_substitute_collection(self._root / "providers")
         reports_data = self._load_and_substitute_collection(self._root / "reports")
+        credentials_data = self._load_and_substitute_collection(self._root / "credentials")
 
         smtp = SMTPConfig.model_validate(smtp_data or {})
         providers = self._parser.parse_providers(providers_data)
         reports = self._parser.parse_reports(reports_data)
+        credentials_registry = self._parser.parse_credentials(credentials_data)
 
-        return Settings(smtp=smtp, providers=providers, reports=reports)
+        return Settings(
+            smtp=smtp,
+            providers=providers,
+            reports=reports,
+            credential_registry=credentials_registry,
+        )
 
     def _load_and_substitute_file(self, path: Path) -> Any:
         """Load file and apply environment substitution."""

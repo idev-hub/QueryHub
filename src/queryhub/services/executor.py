@@ -71,7 +71,7 @@ class ReportExecutor:
         email_mode: bool = False,
     ) -> "ReportExecutor":
         """Factory method for creating executor from config directory.
-        
+
         Args:
             config_dir: Path to configuration directory
             templates_dir: Path to templates directory
@@ -93,7 +93,7 @@ class ReportExecutor:
         report = self._get_report(report_id)
         components = await self._execute_components(report)
         html = await self._render_report(report, components)
-        
+
         return self._build_result(report, components, html)
 
     @property
@@ -122,10 +122,7 @@ class ReportExecutor:
         report: ReportConfig,
     ) -> List[ComponentExecutionResult]:
         """Execute all report components in parallel."""
-        tasks = [
-            self._component_executor.execute(component)
-            for component in report.components
-        ]
+        tasks = [self._component_executor.execute(component) for component in report.components]
         return await asyncio.gather(*tasks)
 
     async def _render_report(

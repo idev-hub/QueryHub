@@ -224,7 +224,9 @@ async def test_postgres_sales_report(containers_ready: bool, monkeypatch, tmp_pa
 
 @pytest.mark.asyncio
 @pytest.mark.integration
-async def test_postgres_query_with_parameters(containers_ready: bool, monkeypatch, tmp_path) -> None:
+async def test_postgres_query_with_parameters(
+    containers_ready: bool, monkeypatch, tmp_path
+) -> None:
     """Test SQL queries with parameters."""
     import textwrap
 
@@ -253,9 +255,9 @@ async def test_postgres_query_with_parameters(containers_ready: bool, monkeypatc
         """\
         providers:
           - id: postgres_test
-            type: sql
-            target:
-              dsn: ${POSTGRES_DSN}
+            resource:
+              sql:
+                dsn: ${POSTGRES_DSN}
         """
     )
     (providers_dir / "providers.yaml").write_text(providers_yaml, encoding="utf-8")
@@ -339,9 +341,9 @@ async def test_postgres_aggregation_queries(containers_ready: bool, monkeypatch,
         """\
         providers:
           - id: postgres_test
-            type: sql
-            target:
-              dsn: ${POSTGRES_DSN}
+            resource:
+              sql:
+                dsn: ${POSTGRES_DSN}
         """
     )
     (providers_dir / "providers.yaml").write_text(providers_yaml, encoding="utf-8")
@@ -439,10 +441,7 @@ async def test_concurrent_queries(containers_ready: bool, monkeypatch) -> None:
 
     try:
         # Execute the same report multiple times concurrently
-        tasks = [
-            executor.execute_report("sales_dashboard")
-            for _ in range(3)
-        ]
+        tasks = [executor.execute_report("sales_dashboard") for _ in range(3)]
         results = await asyncio.gather(*tasks)
 
         # Verify all reports completed successfully
@@ -508,18 +507,20 @@ async def test_all_visualizations(containers_ready: bool, monkeypatch) -> None:
     assert simple_table.result is not None
     assert len(simple_table.result.data) > 0
 
-    total_revenue_text = next(c for c in result.components if c.component.id == "total_revenue_text")
+    total_revenue_text = next(
+        c for c in result.components if c.component.id == "total_revenue_text"
+    )
     assert total_revenue_text.rendered_html is not None
     assert "Total Revenue:" in total_revenue_text.rendered_html
 
     transaction_count = next(c for c in result.components if c.component.id == "transaction_count")
     assert transaction_count.rendered_html is not None
-    
+
     # Verify HTML components
     key_metrics = next(c for c in result.components if c.component.id == "key_metrics_card")
     assert key_metrics.rendered_html is not None
     assert "gradient" in key_metrics.rendered_html
-    
+
     top_regions = next(c for c in result.components if c.component.id == "top_regions_list")
     assert top_regions.rendered_html is not None
     assert "transactions" in top_regions.rendered_html
@@ -601,7 +602,9 @@ async def test_chart_visualizations(containers_ready: bool, monkeypatch) -> None
     assert "date" in line_chart.result.data[0]
     assert "daily_revenue" in line_chart.result.data[0]
 
-    scatter_plot = next(c for c in result.components if c.component.id == "units_vs_revenue_scatter")
+    scatter_plot = next(
+        c for c in result.components if c.component.id == "units_vs_revenue_scatter"
+    )
     assert scatter_plot.result is not None
     assert "units_sold" in scatter_plot.result.data[0]
     assert "revenue" in scatter_plot.result.data[0]
@@ -634,7 +637,7 @@ async def test_chart_email_generation(containers_ready: bool, monkeypatch) -> No
     from email.mime.multipart import MIMEMultipart
     from email.mime.text import MIMEText
     from datetime import datetime
-    
+
     config_dir = Path("tests/fixtures/docker_integration")
     templates_dir = Path("templates")
 
@@ -658,11 +661,11 @@ async def test_chart_email_generation(containers_ready: bool, monkeypatch) -> No
     assert result.html is not None
 
     # Create email message
-    msg = MIMEMultipart('alternative')
-    msg['Subject'] = 'QueryHub - Chart Visualizations Report'
-    msg['From'] = 'queryhub@example.com'
-    msg['To'] = 'user@example.com'
-    msg['Date'] = datetime.now().strftime('%a, %d %b %Y %H:%M:%S %z')
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = "QueryHub - Chart Visualizations Report"
+    msg["From"] = "queryhub@example.com"
+    msg["To"] = "user@example.com"
+    msg["Date"] = datetime.now().strftime("%a, %d %b %Y %H:%M:%S %z")
 
     # Add plain text version
     text_content = f"""
@@ -670,15 +673,15 @@ QueryHub Report: Chart Visualizations
 
 This is an HTML email. Please view it in an email client that supports HTML.
 
-Report generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+Report generated: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
 Components: {len(result.components)}
 Charts: 7 static images (email-compatible)
 """
-    
+
     # Attach parts
-    part1 = MIMEText(text_content, 'plain')
-    part2 = MIMEText(result.html, 'html')
-    
+    part1 = MIMEText(text_content, "plain")
+    part2 = MIMEText(result.html, "html")
+
     msg.attach(part1)
     msg.attach(part2)
 
@@ -686,10 +689,10 @@ Charts: 7 static images (email-compatible)
     output_dir = Path("test_output")
     output_dir.mkdir(exist_ok=True)
     eml_file = output_dir / "chart_visualizations_email.eml"
-    
-    with open(eml_file, 'w', encoding='utf-8') as f:
+
+    with open(eml_file, "w", encoding="utf-8") as f:
         f.write(msg.as_string())
-    
+
     print(f"\n📧 Email saved to: {eml_file.absolute()}")
     print(f"📊 Components included: {len(result.components)}")
     print(f"📝 HTML size: {len(result.html):,} bytes")
@@ -697,20 +700,20 @@ Charts: 7 static images (email-compatible)
     print(f"   macOS: open {eml_file}")
     print(f"   Linux: xdg-open {eml_file}")
     print(f"   Windows: start {eml_file}")
-    
+
     # Verify file was created and has content
     assert eml_file.exists()
     assert eml_file.stat().st_size > 0
-    
+
     # Verify email structure
-    email_content = eml_file.read_text(encoding='utf-8')
-    assert 'Subject: QueryHub - Chart Visualizations Report' in email_content
-    assert 'Content-Type: text/html' in email_content
-    assert 'Content-Type: text/plain' in email_content
-    
+    email_content = eml_file.read_text(encoding="utf-8")
+    assert "Subject: QueryHub - Chart Visualizations Report" in email_content
+    assert "Content-Type: text/html" in email_content
+    assert "Content-Type: text/plain" in email_content
+
     # Verify HTML contains static images (base64 encoded PNG)
-    assert 'data:image/png;base64,' in result.html
-    assert 'Revenue by Region (Bar Chart)' in result.html
+    assert "data:image/png;base64," in result.html
+    assert "Revenue by Region (Bar Chart)" in result.html
 
 
 @pytest.mark.asyncio
@@ -720,7 +723,7 @@ async def test_email_generation(containers_ready: bool, monkeypatch) -> None:
     from email.mime.multipart import MIMEMultipart
     from email.mime.text import MIMEText
     from datetime import datetime
-    
+
     config_dir = Path("tests/fixtures/docker_integration")
     templates_dir = Path("templates")
 
@@ -742,11 +745,11 @@ async def test_email_generation(containers_ready: bool, monkeypatch) -> None:
     assert result.html is not None
 
     # Create email message
-    msg = MIMEMultipart('alternative')
-    msg['Subject'] = 'QueryHub - All Visualizations Report'
-    msg['From'] = 'queryhub@example.com'
-    msg['To'] = 'user@example.com'
-    msg['Date'] = datetime.now().strftime('%a, %d %b %Y %H:%M:%S %z')
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = "QueryHub - All Visualizations Report"
+    msg["From"] = "queryhub@example.com"
+    msg["To"] = "user@example.com"
+    msg["Date"] = datetime.now().strftime("%a, %d %b %Y %H:%M:%S %z")
 
     # Add plain text version
     text_content = f"""
@@ -754,14 +757,14 @@ QueryHub Report: All Visualizations
 
 This is an HTML email. Please view it in an email client that supports HTML.
 
-Report generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+Report generated: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
 Components: {len(result.components)}
 """
-    
+
     # Attach parts
-    part1 = MIMEText(text_content, 'plain')
-    part2 = MIMEText(result.html, 'html')
-    
+    part1 = MIMEText(text_content, "plain")
+    part2 = MIMEText(result.html, "html")
+
     msg.attach(part1)
     msg.attach(part2)
 
@@ -769,10 +772,10 @@ Components: {len(result.components)}
     output_dir = Path("test_output")
     output_dir.mkdir(exist_ok=True)
     eml_file = output_dir / "all_visualizations_email.eml"
-    
-    with open(eml_file, 'w', encoding='utf-8') as f:
+
+    with open(eml_file, "w", encoding="utf-8") as f:
         f.write(msg.as_string())
-    
+
     print(f"\n📧 Email saved to: {eml_file.absolute()}")
     print(f"📊 Components included: {len(result.components)}")
     print(f"📝 HTML size: {len(result.html):,} bytes")
@@ -780,20 +783,20 @@ Components: {len(result.components)}
     print(f"   macOS: open {eml_file}")
     print(f"   Linux: xdg-open {eml_file}")
     print(f"   Windows: start {eml_file}")
-    
+
     # Verify file was created and has content
     assert eml_file.exists()
     assert eml_file.stat().st_size > 0
-    
+
     # Verify email structure
-    email_content = eml_file.read_text(encoding='utf-8')
-    assert 'Subject: QueryHub - All Visualizations Report' in email_content
-    assert 'Content-Type: text/html' in email_content
-    assert 'Content-Type: text/plain' in email_content
-    
+    email_content = eml_file.read_text(encoding="utf-8")
+    assert "Subject: QueryHub - All Visualizations Report" in email_content
+    assert "Content-Type: text/html" in email_content
+    assert "Content-Type: text/plain" in email_content
+
     # Verify HTML content contains our custom visualizations
-    assert 'Key Performance Indicators' in result.html
-    assert 'gradient' in result.html
+    assert "Key Performance Indicators" in result.html
+    assert "gradient" in result.html
 
 
 if __name__ == "__main__":
@@ -818,4 +821,3 @@ if __name__ == "__main__":
         print("  docker-compose -f docker-compose.test.yml up -d")
         print("\nTo stop containers, run:")
         print("  docker-compose -f docker-compose.test.yml down")
-

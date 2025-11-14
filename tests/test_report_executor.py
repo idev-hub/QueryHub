@@ -82,14 +82,15 @@ async def test_execute_sql_and_rest_report(monkeypatch, tmp_path) -> None:
         """\
         providers:
           - id: sqlite_metrics
-            type: sql
-            target:
-              dsn: ${SQLITE_DSN}
+            resource:
+              sql:
+                dsn: ${SQLITE_DSN}
           - id: rest_local
-            type: rest
-            base_url: ${REST_BASE_URL}
-            default_headers:
-              Accept: application/json
+            resource:
+              rest:
+                base_url: ${REST_BASE_URL}
+                default_headers:
+                  Accept: application/json
         """
     )
     (providers_dir / "providers.yaml").write_text(providers_yaml, encoding="utf-8")
@@ -145,8 +146,6 @@ async def test_execute_sql_and_rest_report(monkeypatch, tmp_path) -> None:
     assert metrics_component.result is not None
     assert metrics_component.result.data[0]["category"] == "alpha"
 
-    rest_component = next(
-        item for item in result.components if item.component.id == "api_status"
-    )
+    rest_component = next(item for item in result.components if item.component.id == "api_status")
     assert rest_component.rendered_html is not None
     assert "API status: ok" in rest_component.rendered_html

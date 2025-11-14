@@ -7,7 +7,7 @@ from typing import Any, Mapping, Protocol, TYPE_CHECKING
 from ..config.models import ComponentRenderConfig, ReportConfig, ReportEmailConfig, Settings
 
 if TYPE_CHECKING:  # pragma: no cover - import guard
-    from ..providers.base import QueryProvider
+    from ..providers.base_query_provider import BaseQueryProvider
     from ..rendering.renderers import ComponentRenderer
     from ..services.executor import ReportExecutionResult
 
@@ -22,7 +22,7 @@ class ConfigLoaderProtocol(Protocol):
 class ProviderFactoryProtocol(Protocol):
     """Create concrete providers using an identifier."""
 
-    def create(self, provider_id: str) -> "QueryProvider":
+    def create(self, provider_id: str) -> "BaseQueryProvider":
         """Return a provider configured for the requested id."""
 
 

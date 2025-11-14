@@ -5,7 +5,6 @@ from __future__ import annotations
 from pathlib import Path
 
 from queryhub.config import ConfigLoader
-from queryhub.config.models import ProviderType
 
 
 def test_load_settings_with_environment(monkeypatch) -> None:
@@ -18,5 +17,5 @@ def test_load_settings_with_environment(monkeypatch) -> None:
 
     assert "csv_fixture" in settings.providers
     provider = settings.providers["csv_fixture"]
-    assert provider.type is ProviderType.CSV
+    assert provider.type == "csv"  # String comparison instead of enum
     assert settings.smtp.default_from == "reports@example.test"

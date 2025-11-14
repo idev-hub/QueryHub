@@ -11,7 +11,7 @@ from ..config.models import QueryComponentConfig
 from ..core.contracts import ProviderFactoryProtocol, RendererResolverProtocol
 from ..core.errors import ExecutionTimeoutError, RenderingError
 from ..core.retry import ExponentialBackoffRetry, RetryPolicy
-from ..providers import QueryProvider, QueryResult
+from ..providers import BaseQueryProvider, QueryResult
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -43,10 +43,10 @@ class ProviderResolver:
 
     def __init__(self, provider_factory: ProviderFactoryProtocol) -> None:
         self._factory = provider_factory
-        self._providers: dict[str, QueryProvider] = {}
+        self._providers: dict[str, BaseQueryProvider] = {}
         self._lock = asyncio.Lock()
 
-    async def get_provider(self, provider_id: str) -> QueryProvider:
+    async def get_provider(self, provider_id: str) -> BaseQueryProvider:
         """Get or create a provider instance (thread-safe lazy loading)."""
         if provider_id in self._providers:
             return self._providers[provider_id]
@@ -112,7 +112,7 @@ class ComponentExecutor:
     async def _execute_query_with_retry(
         self,
         component: QueryComponentConfig,
-        provider: QueryProvider,
+        provider: BaseQueryProvider,
     ) -> tuple[QueryResult, int]:
         """Execute query with retry policy."""
         retry_policy = self._build_retry_policy(component, provider)
@@ -123,7 +123,9 @@ class ComponentExecutor:
         async def operation() -> QueryResult:
             nonlocal attempts
             attempts += 1
-            timeout = component.timeout_seconds or provider.config.default_timeout_seconds
+            timeout = component.timeout_seconds or getattr(
+                provider.config, "default_timeout_seconds", 30.0
+            )
 
             try:
                 if timeout:
@@ -154,22 +156,20 @@ class ComponentExecutor:
             renderer = self._renderer_resolver.resolve(component.render)
             return renderer.render(component, result)
         except Exception as exc:
-            raise RenderingError(
-                f"Failed to render component '{component.id}': {exc}"
-            ) from exc
+            raise RenderingError(f"Failed to render component '{component.id}': {exc}") from exc
 
     def _build_retry_policy(
         self,
         component: QueryComponentConfig,
-        provider: QueryProvider,
+        provider: BaseQueryProvider,
     ) -> RetryPolicy:
         """Build retry policy from component and provider config."""
         max_attempts = (
             component.retries
             if component.retries is not None
-            else provider.config.retry_attempts
+            else getattr(provider.config, "retry_attempts", 3)
         )
-        backoff_seconds = provider.config.retry_backoff_seconds
+        backoff_seconds = getattr(provider.config, "retry_backoff_seconds", 1.0)
 
         return RetryPolicy(
             max_attempts=max(1, max_attempts),

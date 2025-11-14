@@ -2,8 +2,12 @@
 
 from __future__ import annotations
 
-from queryhub.config.models import ComponentRenderConfig, ComponentRendererType, QueryComponentConfig
-from queryhub.providers.base import QueryResult
+from queryhub.config.models import (
+    ComponentRenderConfig,
+    ComponentRendererType,
+    QueryComponentConfig,
+)
+from queryhub.providers.base_query_provider import QueryResult
 from queryhub.rendering.renderers import RendererRegistry, TableRenderer, TextRenderer
 
 

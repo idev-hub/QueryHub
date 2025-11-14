@@ -90,9 +90,7 @@ class ExponentialBackoffRetry(RetryStrategy[T]):
         if self._policy.backoff_multiplier == 0:
             return self._policy.backoff_seconds
 
-        delay = self._policy.backoff_seconds * (
-            self._policy.backoff_multiplier ** attempt
-        )
+        delay = self._policy.backoff_seconds * (self._policy.backoff_multiplier**attempt)
         return min(delay, self._policy.max_backoff_seconds)
 
 
