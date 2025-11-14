@@ -1,26 +1,71 @@
 # QueryHub
 
 [![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-QueryHub turns declarative YAML configuration into automated, fully rendered HTML email reports. It fans out asynchronous queries to heterogeneous data sources, binds the responses to Jinja2 templates, and delivers the resulting document via SMTP.
+**Transform your data into beautiful, automated email reports — no code required.**
 
-## Highlights
-- **Multi-cloud ready** – Unified architecture supporting Azure, AWS, and GCP with reusable credential entities
-- **Config-first** – Providers, credentials, report layout, and SMTP definitions live in YAML with environment-variable overrides (`${VAR:default}`) for secrets
-- **Credential reusability** – Define credentials once, reference them across multiple providers by ID
-- **Pluggable data providers** – Built-in adapters for Azure Data Explorer (Kusto), SQL (SQLAlchemy async engines), REST APIs (aiohttp), and local CSV files. New providers implement `BaseQueryProvider`
-- **Async execution** – Components run concurrently with configurable timeouts, retries, and exponential backoff
-- **Templateable HTML** – Reports are rendered with Jinja2 templates; components (tables, charts, text) compose the final document
-- **Email delivery** – Uses SMTP (via `aiosmtplib`) with TLS/STARTTLS, multiple credential options, and a DKIM stub hook
-- **SOLID architecture** – Clean separation of concerns with dependency injection and interface-based design
-- **CI-ready** – Packaging via `pyproject.toml`, linting with Ruff, typing with mypy, tests with pytest/pytest-asyncio, and a GitHub Actions workflow
+QueryHub solves the problem of creating and delivering data-driven email reports across your organization. Instead of writing custom scripts for each report, define your data sources, queries, and layouts in simple YAML configuration files. QueryHub handles the complexity of connecting to multiple databases, executing queries, rendering visualizations, and delivering professional HTML emails.
 
-## Quick start
+## 🎯 What Problem Does QueryHub Solve?
+
+**The Challenge:** Your team needs regular reports from multiple data sources (databases, APIs, cloud services), but:
+- Writing custom reporting scripts for each report is time-consuming
+- Maintaining separate code for database connections, query execution, HTML rendering, and email delivery is complex
+- Each new report or data source requires significant development effort
+- Reports lack consistent styling and branding
+
+**The Solution:** QueryHub provides a configuration-driven platform where you:
+1. Define your data sources once (PostgreSQL, Azure Kusto, AWS resources, GCP BigQuery, REST APIs, CSV files)
+2. Write SQL queries or data transformations in YAML
+3. Choose from pre-built visualizations (tables, charts, KPI cards, alerts)
+4. Let QueryHub handle connections, authentication, rendering, and email delivery
+
+## ✨ Key Features
+
+### 🔌 Multi-Cloud & Multi-Database Support
+Connect to diverse data sources with unified configuration:
+- **Cloud Platforms:** Azure (Data Explorer/Kusto), AWS (Athena, RDS), GCP (BigQuery)
+- **Databases:** PostgreSQL, MySQL, SQL Server, SQLite (any SQLAlchemy-compatible database)
+- **APIs:** REST endpoints with flexible authentication
+- **Files:** Local CSV files for static data
+
+### 🔐 Smart Credential Management
+Define credentials once, reuse across multiple data sources:
+- Cloud-native authentication (Azure Default Credentials, AWS IAM, GCP Service Accounts)
+- Environment variable substitution keeps secrets out of config files
+- Support for access keys, service principals, connection strings, and bearer tokens
+
+### ⚡ Asynchronous Execution
+Reports execute efficiently with:
+- Concurrent query execution across multiple data sources
+- Configurable timeouts and retry logic with exponential backoff
+- Non-blocking I/O for fast report generation
+
+### 🎨 Rich Visualizations
+Create professional reports with:
+- **Data Tables** with automatic formatting
+- **Interactive Charts** (bar, line, scatter) powered by Plotly
+- **KPI Cards** with gradient styling
+- **Progress Bars** and completion meters
+- **Alert Boxes** with conditional formatting
+- **Custom HTML** with full Jinja2 templating
+
+### 📧 Reliable Email Delivery
+- SMTP delivery with TLS/STARTTLS support
+- Configurable from/to addresses with template variables
+- Email-client compatible HTML (tested with Gmail, Outlook, Apple Mail)
+- Preview reports in browser before sending
+
+## 🚀 Quick Start
+
 ```bash
+# Clone the repository
 git clone https://github.com/isasnovich/QueryHub.git
 cd QueryHub
 
-# Install uv if not already installed
+# Install uv package manager
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # Create virtual environment and install dependencies
@@ -28,405 +73,421 @@ uv venv
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 uv sync --all-extras
 
-# Optional: export secrets used in example YAML
+# Set up environment variables (optional for examples)
 export POSTGRES_USER=reporter
 export POSTGRES_PASSWORD=reportpw
 export CSV_ROOT="$(pwd)/tests/fixtures/data"
 
-# Run a sample report without sending email
-queryhub run-report sample_report --config-dir config --templates-dir templates --no-email
+# Run a sample report (preview only, no email)
+queryhub run-report sample_report --config-dir config --templates-dir templates --no-email --output-html report.html
+
+# Open the generated report
+open report.html  # macOS
+# or: xdg-open report.html  # Linux
+# or: start report.html  # Windows
 ```
 
-> **Tip:** `queryhub run-report sample_report --no-email --output-html report.html` writes the rendered HTML without sending email.
+## 📊 Live Examples
 
-## Email Report Examples
+See QueryHub in action with these real HTML reports generated from our test suite:
 
-QueryHub generates fully-styled HTML email reports with multiple visualization types. Here are live examples from our test reports:
-
-### Sales Dashboard Report
-A comprehensive business intelligence report featuring:
-- 📊 **Interactive Charts** - Bar charts, line graphs, scatter plots with Plotly
-- 📋 **Data Tables** - Formatted tables with sortable columns
-- 💹 **KPI Cards** - Key metrics with gradient backgrounds and trend indicators
-- 📈 **Progress Bars** - Visual progress indicators with percentage completion
-- 🏆 **Ranked Lists** - Top performers with medal indicators (🥇🥈🥉)
-- ⚠️ **Alert Boxes** - Conditional styling based on data thresholds
-- 🎯 **Product Badges** - Status indicators with color coding
+### 📈 Sales Dashboard Report
+A complete business intelligence dashboard featuring:
+- **KPI Cards** – Key metrics with gradient styling (Total Revenue: $2.5M, Average Order: $845)
+- **Data Tables** – Sales by region with formatted numbers
+- **Interactive Charts** – Revenue trends, transaction counts, and correlations
+- **Progress Bars** – Goal completion with percentage indicators
+- **Ranked Lists** – Top performers with medal rankings 🥇🥈🥉
+- **Alert Boxes** – Conditional warnings based on data thresholds
+- **Status Badges** – Product/category indicators with color coding
 
 **[📄 View Sales Dashboard Report →](docs/images/sales_dashboard_report.html)**
 
-### All Visualizations Report
-Comprehensive showcase of all available component types:
-- Tables (simple and aggregated)
-- Charts (bar, line, scatter)
-- Text components with templating
-- Custom HTML components
-- Conditional formatting
+### 🎨 All Visualizations Report
+Complete showcase of every QueryHub component type:
+- Simple and aggregated data tables
+- Text components with custom formatting
+- Custom HTML layouts and cards
+- List and badge components
+- Conditional formatting examples
 
 **[📄 View All Visualizations Report →](docs/images/all_visualizations_report.html)**
 
-### Chart Visualizations Report
-Focus on data visualization with various chart types:
-- Revenue trends over time (line charts)
-- Regional comparisons (bar charts)
-- Correlation analysis (scatter plots)
-- Multi-dimensional data with color grouping
+### 📉 Chart Visualizations Report
+Data visualization focus with Plotly charts:
+- **Bar Charts** – Regional revenue comparison, product performance
+- **Line Charts** – Time-series revenue trends, transaction counts over time  
+- **Scatter Plots** – Multi-dimensional analysis (units vs revenue, system health metrics)
+- **Color Grouping** – Category-based coloring for better insights
+- **Summary Stats** – Aggregated statistics table
 
 **[📄 View Chart Visualizations Report →](docs/images/chart_visualizations_report.html)**
 
-**To generate these examples yourself:**
+### Generate These Examples Locally
+
 ```bash
-# Run all integration tests to generate report examples
+# Run integration tests to generate all example reports
 make test-all
 
-# View generated reports in test_output/
-open test_output/all_visualizations_report.html
+# View generated HTML reports
 open test_output/sales_dashboard_report.html
+open test_output/all_visualizations_report.html
 open test_output/chart_visualizations_report.html
 
-# Open email versions (.eml files) in your email client
+# View email versions (.eml files) in your email client
 open test_output/all_visualizations_email.eml
 ```
 
-## Configuration model
+For more visualization examples and styling options, see [HTML Visualizations Reference](docs/reference/html-visualizations.md).
+
+## ⚙️ Configuration
+
+QueryHub uses a simple YAML-based configuration structure:
+
 ```
 config/
- ├─ smtp.yaml            # SMTP defaults (host, TLS, credentials, subject template)
+ ├─ smtp.yaml                    # Email delivery settings
  ├─ providers/
- │   └─ providers.yaml   # Provider definitions (ADX/SQL/REST/CSV)
+ │   └─ providers.yaml          # Data source definitions
  └─ reports/
-     └─ sample_report.yaml
+     └─ sample_report.yaml      # Report layouts and queries
 ```
 
-### SMTP (`config/smtp.yaml`)
+### SMTP Configuration
+
+Define your email delivery settings in `config/smtp.yaml`:
+
 ```yaml
-host: smtp.example.com
+host: smtp.gmail.com
 port: 587
 use_tls: false
 starttls: true
 timeout_seconds: 30
-username: ${SMTP_USERNAME:reporter}
-password: ${SMTP_PASSWORD:changeme}
+username: ${SMTP_USERNAME:reporter@example.com}
+password: ${SMTP_PASSWORD}
 default_from: reports@example.com
 default_to:
-  - data-team@example.com
+  - team@example.com
 subject_template: "{{ title }} – {{ generated_at.strftime('%Y-%m-%d') }}"
 ```
 
-### Provider definition (`config/providers/providers.yaml`)
+Environment variables like `${SMTP_PASSWORD}` keep secrets out of version control.
 
-The new architecture separates credentials from providers for reusability:
+### Credentials & Providers
+
+The new architecture separates reusable credentials from provider definitions:
 
 ```yaml
-# Define credentials once, organized by cloud provider
+# Define credentials once
 credentials:
-  - id: azure_default_credentials
+  - id: azure_default
     azure:
-      type: default_credentials
+      type: default_credentials  # Uses Azure CLI, Managed Identity, or environment
   
-  - id: postgres_credentials
+  - id: postgres_creds
     postgresql:
       type: username_password
       username: ${POSTGRES_USER}
       password: ${POSTGRES_PASSWORD}
   
-  - id: rest_api_token
+  - id: api_token
     generic:
       type: token
       token: ${API_TOKEN}
       header_name: Authorization
       template: "Bearer {token}"
 
-# Providers reference credentials by ID
+# Reference credentials across multiple providers
 providers:
-  - id: adx_marketing
+  - id: azure_kusto
     resource:
       adx:
         cluster_uri: https://help.kusto.windows.net
         database: Samples
         default_timeout_seconds: 60
-    credentials: azure_default_credentials
+    credentials: azure_default
   
-  - id: postgres_reporting
+  - id: reporting_db
     resource:
       sql:
-        dsn: postgresql+asyncpg://${POSTGRES_HOST}:${POSTGRES_PORT}/reporting
-    credentials: postgres_credentials
+        dsn: postgresql+asyncpg://localhost:5432/reports
+    credentials: postgres_creds
   
-  - id: rest_weather
+  - id: weather_api
     resource:
       rest:
-        base_url: https://api.open-meteo.com/v1/
-    credentials: rest_api_token
+        base_url: https://api.openweathermap.org/data/2.5/
+    credentials: api_token
 ```
 
 **Supported Cloud Providers:**
-- **Azure**: Default credentials, Managed Identity, Service Principal, Token
-- **AWS**: Default credentials, Access Key, IAM Role
-- **GCP**: Default credentials, Service Account
-- **Generic**: Username/Password, Token, Connection String, No credential
+- **Azure:** Default credentials, Managed Identity, Service Principal, Token
+- **AWS:** Default credentials (boto3 chain), Access Key, IAM Role
+- **GCP:** Default credentials (Application Default), Service Account
+- **Generic:** Username/Password, Token, Connection String, No Authentication
 
-See [Multi-Cloud Architecture](docs/reference/new-architecture.md) for detailed information.
+For detailed credential configuration, see [Getting Started Guide](docs/guides/getting-started.md).
 
-### Report definition (`config/reports/sample_report.yaml`)
-Each component binds to a provider and declares how to render the response.
+### Report Definition
+
+Define your report layout, queries, and visualizations:
+
 ```yaml
+# config/reports/daily_sales.yaml
+id: daily_sales
+title: Daily Sales Report
+template: report.html.j2
+
 components:
-  - id: revenue_snapshot
-    provider: postgres_reporting
+  # Data table from SQL query
+  - id: sales_by_region
+    provider: reporting_db
     query:
       text: |
-        SELECT country, total_revenue FROM finance.revenue_summary
+        SELECT region, SUM(revenue) as total_revenue, COUNT(*) as orders
+        FROM sales
+        WHERE date = CURRENT_DATE
+        GROUP BY region
+        ORDER BY total_revenue DESC
     render:
       type: table
       options:
-        columns: [country, total_revenue]
-  - id: pipeline_chart
-    provider: csv_local
+        columns: [region, total_revenue, orders]
+  
+  # KPI card from aggregation
+  - id: total_revenue
+    provider: reporting_db
     query:
-      path: pipeline.csv
+      text: |
+        SELECT SUM(revenue) as total FROM sales WHERE date = CURRENT_DATE
+    render:
+      type: text
+      options:
+        template: "Total Revenue: ${value:,.2f}"
+        value_path: total
+  
+  # Interactive chart
+  - id: revenue_trend
+    provider: reporting_db
+    query:
+      text: |
+        SELECT date, SUM(revenue) as revenue
+        FROM sales
+        WHERE date >= CURRENT_DATE - INTERVAL '30 days'
+        GROUP BY date
+        ORDER BY date
     render:
       type: chart
       options:
-        chart_type: bar
-        x_field: stage
-        y_field: amount
+        chart_type: line
+        x_field: date
+        y_field: revenue
+        title: "30-Day Revenue Trend"
+
+# Email overrides (optional)
+email:
+  to:
+    - sales-team@example.com
+  subject: "Daily Sales Report – {{ generated_at.strftime('%B %d, %Y') }}"
 ```
 
-## CLI
-```
-queryhub run-report <report_id> \
-  --config-dir config \
-  --templates-dir templates \
-  [--output-html out.html] \
-  [--no-email] \
-  [-v]
+## 🔧 Command Line Interface
 
+QueryHub provides a simple CLI for running and managing reports:
+
+### Run a Report
+
+```bash
+# Run report and send via email
+queryhub run-report <report_id> --config-dir config --templates-dir templates
+
+# Preview report without sending email
+queryhub run-report <report_id> --config-dir config --templates-dir templates --no-email
+
+# Save report to HTML file
+queryhub run-report <report_id> --config-dir config --templates-dir templates --output-html report.html --no-email
+
+# Enable verbose logging
+queryhub run-report <report_id> --config-dir config --templates-dir templates -v
+```
+
+### List Available Reports
+
+```bash
 queryhub list-reports --config-dir config
 ```
 
-## Application composition & DI
+For more CLI options, see [CLI Reference](docs/reference/cli.md).
 
-QueryHub follows **100% SOLID principles** and clean architecture patterns. The codebase features:
+## 🧩 Extending QueryHub
 
-- ✅ **Single Responsibility** - Each class has one clear purpose
-- ✅ **Open/Closed** - Extensible without modifying existing code
-- ✅ **Liskov Substitution** - Implementations are properly substitutable
-- ✅ **Interface Segregation** - Minimal, focused protocols
-- ✅ **Dependency Inversion** - High-level modules depend on abstractions
+### Adding Custom Providers
 
-Library consumers can build the orchestration stack programmatically via `QueryHubApplicationBuilder` which wires the config loader, provider factory, renderer registry, template engine, and email sender behind SOLID-friendly interfaces:
+QueryHub makes it easy to add support for new data sources. Implement the `QueryProvider` interface:
 
 ```python
-from pathlib import Path
-from queryhub.services import QueryHubApplicationBuilder
-
-builder = QueryHubApplicationBuilder(
-  config_dir=Path("config"),
-  templates_dir=Path("templates"),
-  auto_reload_templates=True,
-)
-executor = await builder.create_executor()
-result = await executor.execute_report("sample_report")
-```
-
-Override any dependency (provider factory, renderer resolver, template engine, email sender) by passing custom implementations that satisfy the contracts in `queryhub.core.contracts`.
-
-**Architecture Documentation:**
-- [SOLID Architecture Guide](docs/reference/solid-architecture.md) - Detailed design patterns and principles
-- [Refactoring Summary](docs/reference/refactoring-summary.md) - Complete list of improvements
-- [Migration Guide](docs/guides/migration.md) - How to update your code
-
-## Extending providers
-Subclass `QueryProvider`, implement `execute()`, and register it with a `ProviderRegistry` instance before building the application:
-
-```python
-from pathlib import Path
-
-from queryhub.config import ConfigLoader
-from queryhub.config.models import ProviderType
-from queryhub.core.providers import DefaultProviderFactory, build_default_provider_registry
-from my_project.providers import MyAPIProvider
-
-loader = ConfigLoader(Path("config"))
-settings = await loader.load()
-registry = build_default_provider_registry()
-registry.register(ProviderType("myapi"), MyAPIProvider)
-factory = DefaultProviderFactory(settings.providers, registry)
-```
-
-Providers receive the parsed query dictionary from YAML and should return a `QueryResult`. Custom registries can then be injected via `QueryHubApplicationBuilder`.
-
-## How to add a new provider
-
-Adding a custom provider to QueryHub involves three main steps: creating the provider class, defining the configuration model, and registering the provider.
-
-### Step 1: Create your provider class
-
-Subclass `QueryProvider` and implement the `execute()` method:
-
-```python
-# my_project/providers/elasticsearch.py
 from typing import Any, Mapping
 from queryhub.providers.base import QueryProvider, QueryResult
-from queryhub.config.models import BaseProviderConfig
 from queryhub.core.errors import ProviderExecutionError
 
 class ElasticsearchProvider(QueryProvider):
     """Execute queries against Elasticsearch."""
-
-    def __init__(self, config: BaseProviderConfig) -> None:
-        super().__init__(config)
-        # Initialize your client here
-        self._client = None  # Initialize with config parameters
-
+    
     async def execute(self, query: Mapping[str, Any]) -> QueryResult:
         """Execute an Elasticsearch query."""
-        # Extract query parameters
         index = query.get("index")
         body = query.get("body")
         
         if not index or not body:
-            raise ProviderExecutionError("Elasticsearch queries require 'index' and 'body'")
+            raise ProviderExecutionError("Elasticsearch requires 'index' and 'body'")
         
         # Execute your query
-        # response = await self._client.search(index=index, body=body)
-        response = {"hits": []}  # Example response
+        response = await self._client.search(index=index, body=body)
         
-        # Return normalized result
         return QueryResult(
-            data=response.get("hits", []),
-            metadata={"total": len(response.get("hits", []))}
+            data=response["hits"]["hits"],
+            metadata={"total": response["hits"]["total"]["value"]}
         )
-
+    
     async def close(self) -> None:
         """Clean up resources."""
         if self._client:
             await self._client.close()
 ```
 
-### Step 2: Define configuration model (optional)
-
-For type-safe configuration, create a config model:
-
-```python
-# my_project/config.py
-from dataclasses import dataclass
-from queryhub.config.models import BaseProviderConfig
-
-@dataclass
-class ElasticsearchProviderConfig(BaseProviderConfig):
-    """Configuration for Elasticsearch provider."""
-    hosts: list[str]
-    timeout: int = 30
-```
-
-### Step 3: Register your provider
-
-Register the provider with the registry before building your application:
+Register your custom provider:
 
 ```python
 from pathlib import Path
 from queryhub.config.models import ProviderType
 from queryhub.core.providers import build_default_provider_registry
 from queryhub.services import QueryHubApplicationBuilder
-from my_project.providers.elasticsearch import ElasticsearchProvider
 
-# Build registry with your custom provider
+# Register custom provider
 registry = build_default_provider_registry()
 registry.register(ProviderType("elasticsearch"), ElasticsearchProvider)
 
-# Create application with custom registry
+# Build application with custom registry
 builder = QueryHubApplicationBuilder(
     config_dir=Path("config"),
     templates_dir=Path("templates"),
 )
-# Inject custom registry by providing a custom provider factory
-# Or use the builder's provider_factory parameter if available
+executor = await builder.create_executor()
 ```
 
-### Step 4: Configure your provider in YAML
+For a complete guide on implementing custom providers, see existing providers in `src/queryhub/providers/`.
 
-Add your provider definition to `config/providers/providers.yaml`:
+### Programmatic Usage
 
-```yaml
-providers:
-  - id: my_elasticsearch
-    type: elasticsearch
-    target:
-      hosts:
-        - https://es.example.com:9200
-    credentials:
-      type: bearer_token
-      token: ${ES_TOKEN}
+Use QueryHub as a library in your Python applications:
+
+```python
+from pathlib import Path
+from queryhub.services import QueryHubApplicationBuilder
+
+# Build the application
+builder = QueryHubApplicationBuilder(
+    config_dir=Path("config"),
+    templates_dir=Path("templates"),
+    auto_reload_templates=True,  # Enable for development
+)
+
+# Create report executor
+executor = await builder.create_executor()
+
+# Execute a report
+result = await executor.execute_report("daily_sales")
+
+print(f"Report generated: {result.html_path}")
+print(f"Email sent: {result.email_sent}")
 ```
 
-### Step 5: Use in reports
+Override any component by passing custom implementations that satisfy the contracts in `queryhub.core.contracts`.
 
-Reference your provider in report configurations:
+## 🧪 Testing & Development
 
-```yaml
-# config/reports/my_report.yaml
-components:
-  - id: search_results
-    provider: my_elasticsearch
-    query:
-      index: products
-      body:
-        query:
-          match_all: {}
-    render:
-      type: table
-      options:
-        columns: [name, price, category]
-```
+QueryHub includes comprehensive testing and code quality tools:
 
-### Provider best practices
+### Run Tests
 
-- **Handle missing dependencies gracefully**: Use `_raise_missing_dependency()` for optional packages
-- **Validate configuration**: Override `_validate_config()` to check required settings
-- **Return normalized data**: Always return `QueryResult` with consistent data structures
-- **Implement cleanup**: Override `close()` to release connections and resources
-- **Add metadata**: Include useful metadata (row counts, execution time) in results
-- **Handle errors**: Raise `ProviderExecutionError` with descriptive messages
-
-See existing providers (`src/queryhub/providers/`) for complete implementation examples.
-
-## Templates
-- Default template lives in `templates/report.html.j2` and includes styling plus Plotly support.
-- Add custom templates beside it and reference them by filename in report configs (`template: my-report.html.j2`).
-
-## Testing & linting
 ```bash
-ruff check
-mypy src
-bandit -r src/ -c .bandit  # Security linting
-safety check                # Dependency vulnerability scanning
-pytest --asyncio-mode=auto
+# Run unit tests only
+make test-unit
+# or: pytest tests/ -v -m "not integration"
+
+# Run all tests including integration tests
+make test-all
+# or: pytest tests/ -v
+
+# Run with coverage
+pytest --cov=queryhub --cov-report=html tests/
 ```
 
-Or use the Makefile for convenience:
+### Code Quality
+
 ```bash
-make install       # Install with uv
-make lint          # Run Ruff linter
-make typecheck     # Run mypy type checking
-make security      # Run Bandit security checks
-make safety-check  # Check for vulnerable dependencies
-make check         # Run all checks (lint + typecheck + security)
-make test-unit     # Run unit tests only
-make test-all      # Run all tests including integration
+# Run all quality checks (linting + type checking + security)
+make check
+
+# Individual checks
+make lint          # Ruff linter
+make typecheck     # mypy type checking
+make security      # Bandit security analysis
+make safety-check  # Dependency vulnerability scanning
 ```
 
-**Note:** QueryHub uses [uv](https://docs.astral.sh/uv/) for fast, reliable dependency management.
+Or run tools directly:
 
-Example configs for tests live under `tests/fixtures/` and rely on environment placeholders (set `CSV_ROOT` to run the integration test).
+```bash
+ruff check src/ tests/
+mypy src/
+bandit -r src/ -c .bandit
+safety check
+```
 
-## Additional resources
-- `docs/` – extended guides and CLI reference.
-- `docs/guides/uv-migration.md` – migration guide from pip to uv.
-- `docs/reference/security-tools.md` – security scanning with Bandit and Safety.
-- `examples/` – sample YAML snippets.
-- `scripts/setup_env.sh` – helper for local virtualenv bootstrap.
+### Installing Development Dependencies
 
-## Contributing & license
-Contributions are welcome! See `CONTRIBUTING.md` and the project `CODE_OF_CONDUCT.md`. QueryHub is released under the MIT License (`LICENSE`).
+```bash
+# Install all dependencies including dev tools
+uv sync --all-extras
+
+# Or install only dev extras
+uv sync --extra dev
+```
+
+For more development commands, see [uv Commands Reference](docs/reference/uv-commands.md).
+
+## 📚 Documentation
+
+- **[Getting Started](docs/guides/getting-started.md)** – Step-by-step tutorial from installation to first report
+- **[Installation Guide](docs/guides/installation.md)** – Detailed installation and environment setup
+- **[HTML Visualizations](docs/reference/html-visualizations.md)** – Complete guide to all visualization types
+- **[CLI Reference](docs/reference/cli.md)** – Command-line interface documentation
+- **[Azure Credentials](docs/guides/azure-default-credentials.md)** – Azure authentication configuration
+- **[Email Testing](docs/guides/email-testing.md)** – Testing email delivery locally
+- **[Security Tools](docs/reference/security-tools.md)** – Security scanning with Bandit and Safety
+
+## 🤝 Contributing
+
+Contributions are welcome! Please see:
+- **[CONTRIBUTING.md](CONTRIBUTING.md)** – Contribution guidelines
+- **[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)** – Community standards
+
+## 📝 License
+
+QueryHub is released under the [MIT License](LICENSE).
+
+## 🙏 Acknowledgments
+
+QueryHub is built with these excellent open-source projects:
+- **[uv](https://github.com/astral-sh/uv)** – Fast Python package manager
+- **[Plotly](https://plotly.com/python/)** – Interactive visualization library
+- **[SQLAlchemy](https://www.sqlalchemy.org/)** – SQL toolkit and ORM
+- **[Jinja2](https://jinja.palletsprojects.com/)** – Template engine
+- **[Azure SDK](https://github.com/Azure/azure-sdk-for-python)** – Azure cloud integration
+- **[boto3](https://github.com/boto/boto3)** – AWS SDK for Python
+- **[Google Cloud SDK](https://github.com/googleapis/google-cloud-python)** – GCP integration
+
+---
+
+**Made with ❤️ by the QueryHub team**
