@@ -537,7 +537,7 @@ async def test_all_visualizations(containers_ready: bool, monkeypatch) -> None:
     assert "Last 5 Transactions" in result.html
     assert "Overall Average Rating" in result.html
 
-    print(f"\n📊 Component Summary:")
+    print("\n📊 Component Summary:")
     for c in result.components:
         status = "✅" if c.result else "⚠️"
         print(f"  {status} {c.component.id} ({c.component.render.type.value})")
@@ -621,7 +621,7 @@ async def test_chart_visualizations(containers_ready: bool, monkeypatch) -> None
     assert "Average Customer Rating by Product (Bar Chart)" in result.html
     assert "System Health - Response Time vs Errors (Scatter Plot)" in result.html
 
-    print(f"\n📊 Chart Component Summary:")
+    print("\n📊 Chart Component Summary:")
     for c in result.components:
         status = "✅" if c.result else "⚠️"
         print(f"  {status} {c.component.id} ({c.component.render.type.value})")
@@ -693,7 +693,7 @@ Charts: 7 static images (email-compatible)
     print(f"\n📧 Email saved to: {eml_file.absolute()}")
     print(f"📊 Components included: {len(result.components)}")
     print(f"📝 HTML size: {len(result.html):,} bytes")
-    print(f"\n💡 To view the email:")
+    print("\n💡 To view the email:")
     print(f"   macOS: open {eml_file}")
     print(f"   Linux: xdg-open {eml_file}")
     print(f"   Windows: start {eml_file}")
@@ -776,7 +776,7 @@ Components: {len(result.components)}
     print(f"\n📧 Email saved to: {eml_file.absolute()}")
     print(f"📊 Components included: {len(result.components)}")
     print(f"📝 HTML size: {len(result.html):,} bytes")
-    print(f"\n💡 To view the email:")
+    print("\n💡 To view the email:")
     print(f"   macOS: open {eml_file}")
     print(f"   Linux: xdg-open {eml_file}")
     print(f"   Windows: start {eml_file}")
@@ -791,9 +791,7 @@ Components: {len(result.components)}
     assert 'Content-Type: text/html' in email_content
     assert 'Content-Type: text/plain' in email_content
     
-    # Verify HTML content is present (it will be base64 encoded in the email)
-    import base64
-    # The HTML should contain our custom visualizations
+    # Verify HTML content contains our custom visualizations
     assert 'Key Performance Indicators' in result.html
     assert 'gradient' in result.html
 
