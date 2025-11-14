@@ -18,7 +18,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Mapping, Optional
 
 if TYPE_CHECKING:
-    from ..config.models import ProviderConfig
+    from ..config.provider_models import ProviderConfig
     from ..core.credentials import CredentialRegistry
 
 from ..core.errors import ProviderInitializationError

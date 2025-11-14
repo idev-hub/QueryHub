@@ -12,7 +12,6 @@ from pydantic import TypeAdapter
 
 from ..core.credentials import CredentialRegistry
 from ..core.errors import ConfigurationError
-from .converters import convert_provider_config
 from .credential_models import CredentialConfig
 from .environment import EnvironmentSubstitutor
 from .models import ReportConfig, Settings, SMTPConfig
@@ -100,19 +99,17 @@ class ConfigParser:
     """Parse and validate configuration data (SRP)."""
 
     @staticmethod
-    def parse_providers(definitions: Iterable[Mapping[str, Any]]) -> dict[str, Any]:
-        """Parse provider definitions into type-specific configs.
+    def parse_providers(definitions: Iterable[Mapping[str, Any]]) -> dict[str, ProviderConfig]:
+        """Parse provider definitions.
 
-        Returns dict with both generic and converted configs for compatibility.
+        Returns dict mapping provider ID to ProviderConfig.
         """
-        registry: dict[str, Any] = {}
+        registry: dict[str, ProviderConfig] = {}
         for item in definitions:
             provider = _PROVIDER_ADAPTER.validate_python(item)
             if provider.id in registry:
                 raise ConfigurationError(f"Duplicate provider id '{provider.id}' detected")
-            # Convert to type-specific config for providers
-            converted = convert_provider_config(provider)
-            registry[provider.id] = converted
+            registry[provider.id] = provider
         return registry
 
     @staticmethod

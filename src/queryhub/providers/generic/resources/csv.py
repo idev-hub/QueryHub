@@ -10,9 +10,9 @@ import csv
 from pathlib import Path
 from typing import Any, Mapping, Optional
 
-from ....config.models import CSVProviderConfig
+from ....config.provider_models import ProviderConfig
 from ....core.credentials import CredentialRegistry
-from ....core.errors import ProviderExecutionError
+from ....core.errors import ProviderExecutionError, ProviderInitializationError
 from ...base_query_provider import BaseQueryProvider, QueryResult
 
 
@@ -24,15 +24,18 @@ class CSVQueryProvider(BaseQueryProvider):
 
     def __init__(
         self,
-        config: CSVProviderConfig,
+        config: ProviderConfig,
         credential_registry: Optional[CredentialRegistry] = None,
     ) -> None:
         super().__init__(config, credential_registry)
-        self._root_path = Path(config.root_path)
+        if config.type != "csv" or not config.resource.csv:
+            raise ProviderInitializationError("CSVQueryProvider requires csv resource configuration")
+        self._root_path = Path(config.resource.csv.root_path)
 
     @property
-    def config(self) -> CSVProviderConfig:
-        return super().config  # type: ignore[return-value]
+    def csv_config(self):
+        """Get CSV-specific configuration from resource."""
+        return self.config.resource.csv
 
     async def execute(self, query: Mapping[str, Any]) -> QueryResult:
         """Read data from a CSV file.
@@ -52,8 +55,8 @@ class CSVQueryProvider(BaseQueryProvider):
         if not full_path.exists():
             raise ProviderExecutionError(f"CSV file not found: {full_path}")
 
-        delimiter = query.get("delimiter") or self.config.delimiter
-        encoding = query.get("encoding") or self.config.encoding
+        delimiter = query.get("delimiter") or self.csv_config.delimiter
+        encoding = query.get("encoding") or self.csv_config.encoding
 
         rows = await asyncio.to_thread(self._read_csv, full_path, delimiter, encoding)
 

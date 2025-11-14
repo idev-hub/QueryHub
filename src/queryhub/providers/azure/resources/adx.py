@@ -9,7 +9,7 @@ from __future__ import annotations
 import asyncio
 from typing import Any, Mapping, Optional
 
-from ....config.models import ADXProviderConfig
+from ....config.provider_models import ProviderConfig
 from ....core.credentials import CredentialRegistry
 from ....core.errors import ProviderExecutionError, ProviderInitializationError
 from ...base_credentials import BaseCredential
@@ -25,17 +25,20 @@ class ADXQueryProvider(BaseQueryProvider):
 
     def __init__(
         self,
-        config: ADXProviderConfig,
+        config: ProviderConfig,
         credential_registry: Optional[CredentialRegistry] = None,
     ) -> None:
         super().__init__(config, credential_registry)
+        if config.type != "adx" or not config.resource.adx:
+            raise ProviderInitializationError("ADXQueryProvider requires adx resource configuration")
         self._credential: Optional[BaseCredential] = None
         self._client = None
         self._client_lock = asyncio.Lock()
 
     @property
-    def config(self) -> ADXProviderConfig:
-        return super().config  # type: ignore[return-value]
+    def adx_config(self):
+        """Get ADX-specific configuration from resource."""
+        return self.config.resource.adx
 
     async def execute(self, query: Mapping[str, Any]) -> QueryResult:
         """Execute a KQL query.
@@ -57,7 +60,7 @@ class ADXQueryProvider(BaseQueryProvider):
 
         try:
             response = await client.execute(
-                self.config.database,
+                self.adx_config.database,
                 query_text,
                 properties=properties,
             )
@@ -111,7 +114,7 @@ class ADXQueryProvider(BaseQueryProvider):
 
         # Get authenticated connection (KustoConnectionStringBuilder)
         kcsb = await self._credential.get_connection(
-            service_type="kusto", cluster_uri=self.config.cluster_uri, database=self.config.database
+            service_type="kusto", cluster_uri=self.adx_config.cluster_uri, database=self.adx_config.database
         )
 
         return KustoClient(kcsb)
@@ -126,7 +129,7 @@ class ADXQueryProvider(BaseQueryProvider):
         properties = ClientRequestProperties()
 
         if client_request_id := query.get("client_request_id"):
-            prefix = self.config.client_request_id_prefix or "queryhub"
+            prefix = self.adx_config.client_request_id_prefix or "queryhub"
             properties.client_request_id = f"{prefix};{client_request_id}"
 
         for name, value in query.get("parameters", {}).items():
