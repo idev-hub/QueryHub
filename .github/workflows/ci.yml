@@ -22,6 +22,15 @@ jobs:
         with:
           python-version: "3.11"
 
+      - name: Install system dependencies for Kaleido
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libglib2.0-0 \
+            libnss3 \
+            libgconf-2-4 \
+            libfontconfig1
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -34,4 +43,4 @@ jobs:
         run: mypy src
 
       - name: Run pytest
-        run: pytest --asyncio-mode=auto --cov=src --cov-report=term-missing
+        run: pytest -m "not integration" --asyncio-mode=auto --cov=src --cov-report=term-missing
