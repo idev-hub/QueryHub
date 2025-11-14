@@ -125,6 +125,7 @@ components:
   - id: health_scatter
     title: System Health - Response Time vs Errors (Scatter Plot)
     provider: postgres_test
+    timeout_seconds: 60
     query:
       text: |
         SELECT 
@@ -145,6 +146,7 @@ components:
   - id: summary_stats_table
     title: Summary Statistics (Table)
     provider: postgres_test
+    timeout_seconds: 60
     query:
       text: |
         SELECT 
