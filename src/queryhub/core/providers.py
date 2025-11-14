@@ -41,10 +41,10 @@ def build_default_provider_registry() -> ProviderRegistry:
     """Return a registry pre-populated with built-in providers."""
 
     registry = ProviderRegistry()
-    registry.register(ProviderType.ADX, ADXQueryProvider)
-    registry.register(ProviderType.SQL, SQLQueryProvider)
-    registry.register(ProviderType.REST, RESTQueryProvider)
-    registry.register(ProviderType.CSV, CSVQueryProvider)
+    registry.register(ProviderType.ADX, ADXQueryProvider)  # type: ignore[arg-type]
+    registry.register(ProviderType.SQL, SQLQueryProvider)  # type: ignore[arg-type]
+    registry.register(ProviderType.REST, RESTQueryProvider)  # type: ignore[arg-type]
+    registry.register(ProviderType.CSV, CSVQueryProvider)  # type: ignore[arg-type]
     return registry
 
 

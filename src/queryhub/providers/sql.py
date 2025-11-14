@@ -30,7 +30,7 @@ class SQLQueryProvider(QueryProvider):
         self._sessionmaker: async_sessionmaker | None = None
 
     @property
-    def config(self) -> SQLProviderConfig:  # type: ignore[override]
+    def config(self) -> SQLProviderConfig:
         return super().config  # type: ignore[return-value]
 
     async def execute(self, query: Mapping[str, Any]) -> QueryResult:

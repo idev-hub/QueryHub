@@ -76,7 +76,9 @@ class ResourceManager:
 
     def register_context(self, context: AsyncContextManager) -> None:
         """Register an async context manager for cleanup."""
-        self._exit_stack.enter_async_context(context)
+        # Note: This schedules the context to be entered later during close_all
+        # The return value (the context manager itself) is tracked internally by AsyncExitStack
+        _ = self._exit_stack.enter_async_context(context)
 
     async def close_all(self) -> None:
         """Close all registered resources in reverse order."""

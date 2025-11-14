@@ -16,8 +16,8 @@ from .models import ProviderConfig, ReportConfig, Settings, SMTPConfig
 
 _LOGGER = logging.getLogger(__name__)
 
-_PROVIDER_ADAPTER = TypeAdapter(ProviderConfig)
-_REPORT_ADAPTER = TypeAdapter(ReportConfig)
+_PROVIDER_ADAPTER: TypeAdapter[ProviderConfig] = TypeAdapter(ProviderConfig)
+_REPORT_ADAPTER: TypeAdapter[ReportConfig] = TypeAdapter(ReportConfig)
 
 
 class YAMLFileReader:

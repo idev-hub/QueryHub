@@ -39,7 +39,7 @@ class DataExtractor:
             if not data or isinstance(data[0], Mapping):
                 return [dict(item) for item in data]
         if isinstance(data, Iterable) and not isinstance(data, (str, bytes)):
-            rows = []
+            rows: list[Mapping[str, Any]] = []
             for item in data:
                 if isinstance(item, Mapping):
                     rows.append(dict(item))
@@ -168,7 +168,7 @@ class ChartRenderer(ComponentRenderer):
     ) -> Any:
         """Create Plotly chart figure."""
         try:
-            import plotly.express as px
+            import plotly.express as px  # type: ignore[import-untyped]
         except ImportError as exc:
             raise RenderingError(
                 "Plotly dependency missing. Install the 'charts' extra."
@@ -184,7 +184,7 @@ class ChartRenderer(ComponentRenderer):
     def _figure_to_static_html(self, figure: Any, title: str | None) -> str:
         """Convert Plotly figure to static image embedded in HTML."""
         try:
-            import plotly.io as pio
+            import plotly.io as pio  # type: ignore[import-untyped]
             import base64
             
             # Export figure as PNG image
@@ -249,7 +249,7 @@ class TextRenderer(ComponentRenderer):
             # Escape any dollar signs that aren't part of format specs
             # Then apply the format
             formatted = template.format(value=value)
-            return formatted
+            return str(formatted)
         except (ValueError, KeyError):
             # If formatting fails, return the value as-is
             return str(value)

@@ -20,7 +20,7 @@ class RESTQueryProvider(QueryProvider):
         self._session_lock = asyncio.Lock()
 
     @property
-    def config(self) -> RESTProviderConfig:  # type: ignore[override]
+    def config(self) -> RESTProviderConfig:
         return super().config  # type: ignore[return-value]
 
     async def execute(self, query: Mapping[str, Any]) -> QueryResult:

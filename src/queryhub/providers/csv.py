@@ -20,7 +20,7 @@ class CSVQueryProvider(QueryProvider):
         self._root_path = Path(config.root_path)
 
     @property
-    def config(self) -> CSVProviderConfig:  # type: ignore[override]
+    def config(self) -> CSVProviderConfig:
         return super().config  # type: ignore[return-value]
 
     async def execute(self, query: Mapping[str, Any]) -> QueryResult:
@@ -57,14 +57,14 @@ class CSVQueryProvider(QueryProvider):
                 column = flt.get("column")
                 value = flt.get("value")
                 op = flt.get("operator", "eq")
-                if column not in row:
+                if column is None or column not in row:
                     return False
                 lhs = row[column]
                 if op == "eq" and lhs != value:
                     return False
                 if op == "ne" and lhs == value:
                     return False
-                if op == "contains" and value not in str(lhs):
+                if op == "contains" and value is not None and value not in str(lhs):
                     return False
             return True
 

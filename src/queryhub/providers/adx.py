@@ -19,7 +19,7 @@ class ADXQueryProvider(QueryProvider):
         self._client_lock = asyncio.Lock()
 
     @property
-    def config(self) -> ADXProviderConfig:  # type: ignore[override]
+    def config(self) -> ADXProviderConfig:
         return super().config  # type: ignore[return-value]
 
     async def execute(self, query: Mapping[str, Any]) -> QueryResult:
