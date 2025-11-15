@@ -31,6 +31,13 @@ async def test_execute_csv_report(monkeypatch) -> None:
     assert "CSV Fixture Report" in result.html
     assert "Sample Data Table" in result.html
     assert not result.has_failures
+    
+    # Verify metadata is populated
+    assert "total_duration" in result.metadata
+    assert isinstance(result.metadata["total_duration"], (int, float))
+    assert result.metadata["total_duration"] >= 0
+    assert "component_count" in result.metadata
+    assert result.metadata["component_count"] == len(result.components)
 
 
 @pytest.mark.asyncio
@@ -149,3 +156,13 @@ async def test_execute_sql_and_rest_report(monkeypatch, tmp_path) -> None:
     rest_component = next(item for item in result.components if item.component.id == "api_status")
     assert rest_component.rendered_html is not None
     assert "API status: ok" in rest_component.rendered_html
+    
+    # Verify metadata is populated
+    assert "total_duration" in result.metadata
+    assert isinstance(result.metadata["total_duration"], (int, float))
+    assert result.metadata["total_duration"] >= 0
+    # Total duration should be the sum of individual component durations
+    expected_duration = sum(c.duration_seconds for c in result.components)
+    assert abs(result.metadata["total_duration"] - expected_duration) < 0.001
+    assert "component_count" in result.metadata
+    assert result.metadata["component_count"] == 2
