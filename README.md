@@ -78,8 +78,8 @@ export POSTGRES_USER=reporter
 export POSTGRES_PASSWORD=reportpw
 export CSV_ROOT="$(pwd)/tests/fixtures/data"
 
-# Run a sample report (preview only, no email)
-queryhub run-report sample_report --config-dir config --templates-dir templates --no-email --output-html report.html
+# Run the sample report (preview only, no email)
+queryhub run-report config/reports/daily_sales_report --no-email --output-html report.html
 
 # Open the generated report
 open report.html  # macOS
@@ -142,20 +142,30 @@ For more visualization examples and styling options, see [HTML Visualizations Re
 
 ## ⚙️ Configuration
 
-QueryHub uses a simple YAML-based configuration structure:
+QueryHub uses a folder-based configuration structure for better organization and maintainability:
 
 ```
 config/
- ├─ smtp.yaml                    # Email delivery settings
- ├─ providers/
- │   └─ providers.yaml          # Data source definitions
- └─ reports/
-     └─ sample_report.yaml      # Report layouts and queries
+ ├─ smtp/                            # SMTP configurations
+ │   ├─ default.yaml                # Default SMTP settings
+ │   └─ production.yaml             # Optional: production SMTP
+ ├─ templates/                       # Jinja2 HTML templates
+ │   └─ report.html.j2              # Default report template
+ ├─ providers/                       # Data source configurations
+ │   ├─ credentials.yaml            # Shared credentials
+ │   ├─ 01_databases.yaml           # Database providers
+ │   ├─ 02_azure.yaml               # Azure providers
+ │   └─ 03_rest_apis.yaml           # REST API providers
+ └─ reports/                         # Report definitions
+     └─ daily_sales_report/         # Each report in its own folder
+         ├─ metadata.yaml           # Report metadata
+         ├─ 01_component.yaml       # Component 1 (ordered by prefix)
+         └─ 02_component.yaml       # Component 2
 ```
 
 ### SMTP Configuration
 
-Define your email delivery settings in `config/smtp.yaml`:
+Define your email delivery settings in `config/smtp/default.yaml`:
 
 ```yaml
 host: smtp.gmail.com
@@ -173,12 +183,23 @@ subject_template: "{{ title }} – {{ generated_at.strftime('%Y-%m-%d') }}"
 
 Environment variables like `${SMTP_PASSWORD}` keep secrets out of version control.
 
-### Credentials & Providers
-
-The new architecture separates reusable credentials from provider definitions:
+**Per-Report SMTP Configuration:** You can specify a different SMTP configuration in your report's metadata:
 
 ```yaml
-# Define credentials once
+# config/reports/my_report/metadata.yaml
+id: my_report
+title: My Report
+smtp_config: production.yaml  # Uses config/smtp/production.yaml
+```
+
+**HTML-Only Mode:** If no SMTP configuration exists and `--no-email` is used, QueryHub operates in HTML-only mode.
+
+### Credentials & Providers
+
+Credentials and providers can be split across multiple files for better organization. All YAML files in the `providers/` directory are automatically merged:
+
+```yaml
+# config/providers/credentials.yaml - Define credentials once
 credentials:
   - id: azure_default
     azure:
@@ -197,7 +218,15 @@ credentials:
       header_name: Authorization
       template: "Bearer {token}"
 
-# Reference credentials across multiple providers
+# config/providers/01_databases.yaml - Database providers
+providers:
+  - id: reporting_db
+    resource:
+      sql:
+        dsn: postgresql+asyncpg://localhost:5432/reports
+    credentials: postgres_creds
+
+# config/providers/02_azure.yaml - Azure providers
 providers:
   - id: azure_kusto
     resource:
@@ -206,13 +235,9 @@ providers:
         database: Samples
         default_timeout_seconds: 60
     credentials: azure_default
-  
-  - id: reporting_db
-    resource:
-      sql:
-        dsn: postgresql+asyncpg://localhost:5432/reports
-    credentials: postgres_creds
-  
+
+# config/providers/03_rest_apis.yaml - REST API providers
+providers:
   - id: weather_api
     resource:
       rest:
@@ -230,65 +255,91 @@ For detailed credential configuration, see [Getting Started Guide](docs/guides/g
 
 ### Report Definition
 
-Define your report layout, queries, and visualizations:
+Reports are now folder-based for better organization and maintainability. Each report has its own folder with metadata and component files:
 
 ```yaml
-# config/reports/daily_sales.yaml
-id: daily_sales
+# config/reports/daily_sales_report/metadata.yaml
+id: daily_sales_report
 title: Daily Sales Report
+description: Daily sales performance analytics
+
+# Template filename (looks in config/templates/)
 template: report.html.j2
 
-components:
-  # Data table from SQL query
-  - id: sales_by_region
-    provider: reporting_db
-    query:
-      text: |
-        SELECT region, SUM(revenue) as total_revenue, COUNT(*) as orders
-        FROM sales
-        WHERE date = CURRENT_DATE
-        GROUP BY region
-        ORDER BY total_revenue DESC
-    render:
-      type: table
-      options:
-        columns: [region, total_revenue, orders]
-  
-  # KPI card from aggregation
-  - id: total_revenue
-    provider: reporting_db
-    query:
-      text: |
-        SELECT SUM(revenue) as total FROM sales WHERE date = CURRENT_DATE
-    render:
-      type: text
-      options:
-        template: "Total Revenue: ${value:,.2f}"
-        value_path: total
-  
-  # Interactive chart
-  - id: revenue_trend
-    provider: reporting_db
-    query:
-      text: |
-        SELECT date, SUM(revenue) as revenue
-        FROM sales
-        WHERE date >= CURRENT_DATE - INTERVAL '30 days'
-        GROUP BY date
-        ORDER BY date
-    render:
-      type: chart
-      options:
-        chart_type: line
-        x_field: date
-        y_field: revenue
-        title: "30-Day Revenue Trend"
+# Optional: override default folders (relative or absolute paths)
+# template_folder: ../../../custom_templates
+# providers_folder: ../../../custom_providers
+# smtp_config: production.yaml  # Use specific SMTP config from config/smtp/
 
 # Email overrides (optional)
 email:
   to:
     - sales-team@example.com
-  subject: "Daily Sales Report – {{ generated_at.strftime('%B %d, %Y') }}"
+  subject_template: "Daily Sales Report – {{ generated_at.strftime('%B %d, %Y') }}"
+
+# Scheduling (optional)
+schedule:
+  cron: "0 8 * * 1-5"  # Weekdays at 8 AM
+  timezone: America/New_York
+  enabled: true
+```
+
+Components are defined in separate files, numbered for ordering:
+
+```yaml
+# config/reports/daily_sales_report/01_total_revenue.yaml
+id: total_revenue
+title: Total Revenue Today
+provider: reporting_db
+
+query:
+  text: |
+    SELECT SUM(revenue) as total FROM sales WHERE date = CURRENT_DATE
+
+render:
+  type: text
+  options:
+    template: "Total Revenue: ${value:,.2f}"
+    value_path: total
+
+# config/reports/daily_sales_report/02_sales_by_region.yaml
+id: sales_by_region
+title: Sales by Region
+provider: reporting_db
+
+query:
+  text: |
+    SELECT region, SUM(revenue) as total_revenue, COUNT(*) as orders
+    FROM sales
+    WHERE date = CURRENT_DATE
+    GROUP BY region
+    ORDER BY total_revenue DESC
+
+render:
+  type: table
+  options:
+    columns: [region, total_revenue, orders]
+
+# config/reports/daily_sales_report/03_revenue_trend.yaml
+id: revenue_trend
+title: 30-Day Revenue Trend
+provider: reporting_db
+
+query:
+  text: |
+    SELECT date, SUM(revenue) as revenue
+    FROM sales
+    WHERE date >= CURRENT_DATE - INTERVAL '30 days'
+    GROUP BY date
+    ORDER BY date
+
+render:
+  type: chart
+  options:
+    chart_type: line
+    x_field: date
+    y_field: revenue
+    title: "30-Day Revenue Trend"
 ```
 
 ## 🔧 Command Line Interface
@@ -298,23 +349,25 @@ QueryHub provides a simple CLI for running and managing reports:
 ### Run a Report
 
 ```bash
-# Run report and send via email
-queryhub run-report <report_id> --config-dir config --templates-dir templates
+# Run report from folder and send via email
+queryhub run-report config/reports/daily_sales_report
 
 # Preview report without sending email
-queryhub run-report <report_id> --config-dir config --templates-dir templates --no-email
+queryhub run-report config/reports/daily_sales_report --no-email
 
 # Save report to HTML file
-queryhub run-report <report_id> --config-dir config --templates-dir templates --output-html report.html --no-email
+queryhub run-report config/reports/daily_sales_report --output-html report.html --no-email
 
 # Enable verbose logging
-queryhub run-report <report_id> --config-dir config --templates-dir templates -v
+queryhub run-report config/reports/daily_sales_report -v
 ```
+
+**Note:** All configuration is in the report's metadata.yaml and config folder structure. Templates, providers, and SMTP settings are auto-discovered.
 
 ### List Available Reports
 
 ```bash
-queryhub list-reports --config-dir config
+queryhub list-reports config
 ```
 
 For more CLI options, see [CLI Reference](docs/reference/cli.md).

@@ -1,0 +1,24 @@
+id: product_badges
+title: Product Performance Badges
+provider: postgres_test
+query:
+  text: "SELECT \n  product,\n  CAST(SUM(revenue) AS FLOAT) as revenue,\n  COUNT(*)\
+    \ as sales_count,\n  CASE \n    WHEN SUM(revenue) > 90000 THEN 'Top Seller'\n\
+    \    WHEN SUM(revenue) > 50000 THEN 'Best Seller'\n    ELSE 'Regular'\n  END as\
+    \ badge\nFROM sales_metrics\nGROUP BY product\nORDER BY revenue DESC\n"
+render:
+  type: html
+  options:
+    template: "<div style=\"display: flex; flex-wrap: wrap; gap: 12px;\">\n  {% for\
+      \ row in data %}\n  <div style=\"flex: 1; min-width: 200px; padding: 16px; border:\
+      \ 2px solid {% if row.badge == 'Top Seller' %}#ef4444{% elif row.badge == 'Best\
+      \ Seller' %}#f59e0b{% else %}#94a3b8{% endif %}; border-radius: 8px; background:\
+      \ white;\">\n    <div style=\"display: flex; align-items: center; justify-content:\
+      \ space-between; margin-bottom: 8px;\">\n      <span style=\"font-weight: bold;\
+      \ font-size: 16px;\">{{ row.product }}</span>\n      <span style=\"background:\
+      \ {% if row.badge == 'Top Seller' %}#ef4444{% elif row.badge == 'Best Seller'\
+      \ %}#f59e0b{% else %}#94a3b8{% endif %}; color: white; padding: 4px 8px; border-radius:\
+      \ 12px; font-size: 11px; font-weight: bold;\">{{ row.badge }}</span>\n    </div>\n\
+      \    <div style=\"color: #666; font-size: 14px;\">{{ \"{:,.2f}\".format(row.revenue)\
+      \ }}</div>\n    <div style=\"color: #94a3b8; font-size: 12px;\">{{ row.sales_count\
+      \ }} sales</div>\n  </div>\n  {% endfor %}\n</div>\n"

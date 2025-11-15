@@ -1,0 +1,8 @@
+id: chart_visualizations
+title: Chart Visualizations Test Report
+description: Test report showcasing various chart types using Plotly
+html_template_path: report.html.j2
+email:
+  to:
+  - test@queryhub.local
+  subject: '[Test] Chart Visualizations Report'

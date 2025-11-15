@@ -1,0 +1,8 @@
+id: simple_table
+title: Simple Table - All Sales
+provider: postgres_test
+query:
+  text: "SELECT \n  region,\n  product,\n  revenue,\n  units_sold,\n  sale_date\n\
+    FROM sales_metrics\nORDER BY sale_date DESC, revenue DESC\nLIMIT 10\n"
+render:
+  type: table

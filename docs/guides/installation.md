@@ -178,7 +178,7 @@ pip install queryhub[cloud]
 
 ```bash
 docker pull queryhub/queryhub:latest
-docker run -v $(pwd)/config:/app/config queryhub/queryhub run-report daily_sales
+docker run -v $(pwd)/config:/app/config queryhub/queryhub run-report /app/config/reports/daily_sales
 ```
 
 ### Building from Source

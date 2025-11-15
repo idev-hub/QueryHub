@@ -1,0 +1,9 @@
+id: csv_table
+title: Sample Data Table
+provider: csv_fixture
+
+query:
+  path: sample.csv
+
+render:
+  type: table

@@ -1,0 +1,8 @@
+id: feedback_table
+title: Customer Feedback
+provider: postgres_test
+query:
+  text: "SELECT \n  customer_name,\n  product,\n  rating,\n  comment,\n  feedback_date\n\
+    FROM customer_feedback\nORDER BY rating DESC, feedback_date DESC\n"
+render:
+  type: table

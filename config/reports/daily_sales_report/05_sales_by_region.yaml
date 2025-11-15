@@ -1,0 +1,27 @@
+# =============================================================================
+# Component: Sales Distribution by Region
+# =============================================================================
+
+id: sales_by_region
+title: Sales Distribution by Region
+description: Geographic breakdown of sales
+provider: postgres_sales
+
+query:
+  text: |
+    SELECT 
+      region,
+      SUM(amount) as revenue,
+      COUNT(*) as orders
+    FROM sales
+    WHERE date = CURRENT_DATE
+    GROUP BY region
+    ORDER BY revenue DESC
+
+render:
+  type: chart
+  options:
+    chart_type: pie
+    label_field: region
+    value_field: revenue
+    title: Sales by Region

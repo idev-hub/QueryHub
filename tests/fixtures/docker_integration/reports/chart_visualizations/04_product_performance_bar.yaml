@@ -1,0 +1,13 @@
+id: product_performance_bar
+title: Product Performance by Region (Colored Bar Chart)
+provider: postgres_test
+query:
+  text: "SELECT \n  product,\n  SUM(revenue) as total_revenue,\n  region\nFROM sales_metrics\n\
+    GROUP BY product, region\nORDER BY total_revenue DESC\n"
+render:
+  type: chart
+  options:
+    chart_type: bar
+    x_field: product
+    y_field: total_revenue
+    color: region

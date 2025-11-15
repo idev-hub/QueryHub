@@ -1,0 +1,9 @@
+id: recent_transactions
+title: Last 5 Transactions
+provider: postgres_test
+query:
+  text: "SELECT \n  sale_date,\n  region,\n  product,\n  revenue,\n  units_sold,\n\
+    \  ROUND(revenue / units_sold, 2) as price_per_unit\nFROM sales_metrics\nORDER\
+    \ BY sale_date DESC, id DESC\nLIMIT 5\n"
+render:
+  type: table

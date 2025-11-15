@@ -1,0 +1,28 @@
+id: key_metrics_card
+title: Key Performance Indicators
+provider: postgres_test
+query:
+  text: "SELECT \n  COUNT(*) as total_transactions,\n  CAST(SUM(revenue) AS FLOAT)\
+    \ as total_revenue,\n  CAST(AVG(revenue) AS FLOAT) as avg_transaction,\n  CAST(MAX(revenue)\
+    \ AS FLOAT) as max_transaction\nFROM sales_metrics\n"
+render:
+  type: html
+  options:
+    template: "<div style=\"display: grid; grid-template-columns: repeat(2, 1fr);\
+      \ gap: 16px;\">\n  <div style=\"background: linear-gradient(135deg, #667eea\
+      \ 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 8px; text-align:\
+      \ center;\">\n    <div style=\"font-size: 32px; font-weight: bold;\">{{ total_transactions\
+      \ }}</div>\n    <div style=\"font-size: 14px; opacity: 0.9;\">Total Transactions</div>\n\
+      \  </div>\n  <div style=\"background: linear-gradient(135deg, #f093fb 0%, #f5576c\
+      \ 100%); color: white; padding: 20px; border-radius: 8px; text-align: center;\"\
+      >\n    <div style=\"font-size: 32px; font-weight: bold;\">{{ \"{:,.0f}\".format(total_revenue)\
+      \ }}</div>\n    <div style=\"font-size: 14px; opacity: 0.9;\">Total Revenue</div>\n\
+      \  </div>\n  <div style=\"background: linear-gradient(135deg, #4facfe 0%, #00f2fe\
+      \ 100%); color: white; padding: 20px; border-radius: 8px; text-align: center;\"\
+      >\n    <div style=\"font-size: 32px; font-weight: bold;\">{{ \"{:,.0f}\".format(avg_transaction)\
+      \ }}</div>\n    <div style=\"font-size: 14px; opacity: 0.9;\">Avg Transaction</div>\n\
+      \  </div>\n  <div style=\"background: linear-gradient(135deg, #43e97b 0%, #38f9d7\
+      \ 100%); color: white; padding: 20px; border-radius: 8px; text-align: center;\"\
+      >\n    <div style=\"font-size: 32px; font-weight: bold;\">{{ \"{:,.0f}\".format(max_transaction)\
+      \ }}</div>\n    <div style=\"font-size: 14px; opacity: 0.9;\">Max Transaction</div>\n\
+      \  </div>\n</div>\n"

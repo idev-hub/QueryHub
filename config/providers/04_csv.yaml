@@ -1,0 +1,20 @@
+# =============================================================================
+# CSV File Providers
+# =============================================================================
+
+providers:
+  - id: csv_local
+    resource:
+      csv:
+        root_path: data
+        delimiter: ","
+        quotechar: '"'
+    credentials: csv_no_credentials
+  
+  - id: csv_exports
+    resource:
+      csv:
+        root_path: /exports
+        delimiter: ";"
+        encoding: utf-8
+    credentials: csv_no_credentials

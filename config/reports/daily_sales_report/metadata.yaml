@@ -1,0 +1,42 @@
+# =============================================================================
+# Daily Sales Report - Metadata
+# =============================================================================
+
+id: daily_sales_report
+title: Daily Sales Performance Report
+description: Complete sales analytics including revenue, orders, and trends
+
+# Template configuration (filename in config/templates/)
+template: report.html.j2
+
+# Optional: override default folders (relative to this report or absolute paths)
+# template_folder: ../../../templates  # Uncomment to use custom template folder
+# providers_folder: ../../../providers  # Uncomment to use custom providers folder
+
+# Email configuration
+email:
+  to:
+    - sales-team@company.com
+    - management@company.com
+  cc:
+    - analytics@company.com
+  subject_template: "Daily Sales Report - {{ generated_at.strftime('%B %d, %Y') }}"
+  body_template: |
+    Daily sales performance report for {{ generated_at.strftime('%B %d, %Y') }}.
+    
+    See attached HTML report for detailed analytics.
+
+# Scheduling (optional)
+schedule:
+  cron: "0 18 * * *"  # Daily at 6 PM
+  timezone: America/New_York
+  enabled: true
+
+# Layout (optional)
+layout:
+  sections: []
+
+# Tags (optional)
+tags:
+  department: sales
+  priority: high

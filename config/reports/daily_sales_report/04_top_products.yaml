@@ -1,0 +1,31 @@
+# =============================================================================
+# Component: Top Products by Revenue
+# =============================================================================
+
+id: top_products
+title: Top 10 Products by Revenue
+description: Best-selling products today
+provider: postgres_sales
+
+query:
+  text: |
+    SELECT 
+      p.name as product,
+      SUM(s.amount) as revenue,
+      COUNT(*) as units_sold
+    FROM sales s
+    JOIN products p ON s.product_id = p.id
+    WHERE s.date = CURRENT_DATE
+    GROUP BY p.name
+    ORDER BY revenue DESC
+    LIMIT 10
+
+render:
+  type: chart
+  options:
+    chart_type: bar
+    x_field: product
+    y_field: revenue
+    title: Top 10 Products Today
+    x_label: Product
+    y_label: Revenue ($)

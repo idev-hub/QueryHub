@@ -39,47 +39,68 @@ username: ${SMTP_USERNAME}
 password: ${SMTP_PASSWORD}
 ```
 
-### Providers (config/providers/providers.yaml)
+### Providers (config/providers/)
+Providers can be split across multiple files (all .yaml files are merged):
+
 ```yaml
+# config/providers/credentials.yaml
+credentials:
+  - id: my_creds
+    postgresql:
+      type: username_password
+      username: ${POSTGRES_USER}
+      password: ${POSTGRES_PASSWORD}
+
+# config/providers/01_databases.yaml
 providers:
   - id: my_db
-    type: sql
-    target:
-      dsn: postgresql+asyncpg://user:pass@host/db
+    resource:
+      sql:
+        dsn: postgresql+asyncpg://localhost:5432/db
+    credentials: my_creds
 ```
 
-### Report (config/reports/my_report.yaml)
+### Report (config/reports/my_report/)
+Reports are now folder-based with components in separate files:
+
 ```yaml
+# metadata.yaml
 id: my_report
 title: My Report
-components:
-  - id: data
-    provider: my_db
-    query:
-      text: SELECT * FROM table
-    render:
-      type: table
+html_template_path: report.html.j2
+email:
+  to: [team@example.com]
+
+# 01_component.yaml
+id: data
+provider: my_db
+query:
+  text: SELECT * FROM table
+render:
+  type: table
 ```
 
 ## 🎯 Common Commands
 
 ```bash
 # List reports
-./queryhub list-reports --config-dir config --templates-dir templates
+./queryhub list-reports config
 
 # Run without email
-./queryhub run-report REPORT_ID --no-email --output-html output.html
+./queryhub run-report config/reports/my_report --no-email --output-html output.html
 
 # Run with email
-./queryhub run-report REPORT_ID
+./queryhub run-report config/reports/my_report
 
 # Verbose mode
-./queryhub run-report REPORT_ID -v
+./queryhub run-report config/reports/my_report -v
 
 # Get help
 ./queryhub --help
 ./queryhub run-report --help
 ```
+
+**Note:** Everything is auto-configured. Just pass the report folder path.
 
 ## 🔐 Environment Variables
 

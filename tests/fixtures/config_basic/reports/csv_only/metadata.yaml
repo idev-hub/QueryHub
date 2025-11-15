@@ -1,0 +1,8 @@
+id: csv_only
+title: CSV Fixture Report
+description: Integration test report using CSV data only.
+html_template_path: report.html.j2
+
+email:
+  to:
+    - qa@example.test

@@ -9,22 +9,29 @@ from pathlib import Path
 import pytest
 from aiohttp import web
 
-from queryhub.services import ReportExecutor
+from queryhub.services import QueryHubApplicationBuilder
 
 
 @pytest.mark.asyncio
 async def test_execute_csv_report(monkeypatch) -> None:
     config_dir = Path("tests/fixtures/config_basic")
-    templates_dir = Path("templates")
+    templates_dir = Path("config/templates")
     csv_root = Path("tests/fixtures/data").resolve()
     monkeypatch.setenv("CSV_ROOT", str(csv_root))
 
-    executor = await ReportExecutor.from_config_dir(
-        config_dir,
+    builder = QueryHubApplicationBuilder(
+        config_dir=config_dir,
         templates_dir=templates_dir,
     )
+    executor = await builder.create_executor()
     try:
-        result = await executor.execute_report("csv_only")
+        # Load the csv_only report
+        from queryhub.config.loader import ConfigLoader
+        loader = ConfigLoader(config_dir)
+        report_config = loader.load_report_from_folder(config_dir / "reports" / "csv_only")
+        executor.settings.reports[report_config.id] = report_config
+        
+        result = await executor.execute_report(report_config.id)
     finally:
         await executor.shutdown()
 
@@ -38,11 +45,13 @@ async def test_execute_sql_and_rest_report(monkeypatch, tmp_path) -> None:
     config_dir = tmp_path / "config"
     providers_dir = config_dir / "providers"
     reports_dir = config_dir / "reports"
+    smtp_dir = config_dir / "smtp"
     providers_dir.mkdir(parents=True)
     reports_dir.mkdir(parents=True)
+    smtp_dir.mkdir(parents=True)
 
     smtp_yaml = textwrap.dedent(
-        """\
+        """
         host: localhost
         port: 1025
         use_tls: false
@@ -50,7 +59,7 @@ async def test_execute_sql_and_rest_report(monkeypatch, tmp_path) -> None:
         default_from: reports@example.test
         """
     )
-    (config_dir / "smtp.yaml").write_text(smtp_yaml, encoding="utf-8")
+    (smtp_dir / "default.yaml").write_text(smtp_yaml, encoding="utf-8")
 
     db_path = tmp_path / "metrics.db"
     with sqlite3.connect(db_path) as conn:
@@ -95,42 +104,63 @@ async def test_execute_sql_and_rest_report(monkeypatch, tmp_path) -> None:
     )
     (providers_dir / "providers.yaml").write_text(providers_yaml, encoding="utf-8")
 
-    report_yaml = textwrap.dedent(
+    # Create folder-based report
+    combined_dir = reports_dir / "combined_report"
+    combined_dir.mkdir()
+    
+    metadata_yaml = textwrap.dedent(
         """\
         id: combined_report
         title: SQL and REST Report
         template: report.html.j2
-        components:
-          - id: metrics_table
-            provider: sqlite_metrics
-            query:
-              text: |
-                SELECT category, total FROM metrics ORDER BY total DESC
-            render:
-              type: table
-          - id: api_status
-            provider: rest_local
-            query:
-              endpoint: data
-            render:
-              type: text
-              options:
-                template: "API status: {value}"
-                value_path: status
         email:
           to:
             - qa@example.test
         """
     )
-    (reports_dir / "combined.yaml").write_text(report_yaml, encoding="utf-8")
+    (combined_dir / "metadata.yaml").write_text(metadata_yaml, encoding="utf-8")
+    
+    component1_yaml = textwrap.dedent(
+        """\
+        id: metrics_table
+        provider: sqlite_metrics
+        query:
+          text: |
+            SELECT category, total FROM metrics ORDER BY total DESC
+        render:
+          type: table
+        """
+    )
+    (combined_dir / "01_metrics.yaml").write_text(component1_yaml, encoding="utf-8")
+    
+    component2_yaml = textwrap.dedent(
+        """\
+        id: api_status
+        provider: rest_local
+        query:
+          endpoint: data
+        render:
+          type: text
+          options:
+            template: "API status: {value}"
+            value_path: status
+        """
+    )
+    (combined_dir / "02_api.yaml").write_text(component2_yaml, encoding="utf-8")
 
-    templates_dir = Path("templates")
-    executor: ReportExecutor | None = None
+    builder = QueryHubApplicationBuilder(
+        config_dir=config_dir,
+        templates_dir=Path("config/templates"),
+    )
+    executor = None
     try:
-        executor = await ReportExecutor.from_config_dir(
-            config_dir,
-            templates_dir=templates_dir,
-        )
+        executor = await builder.create_executor()
+        # Load the report from folder
+        from queryhub.config.loader import ConfigLoader
+        loader = ConfigLoader(config_dir)
+        report_config = loader.load_report_from_folder(combined_dir)
+        executor.settings.reports[report_config.id] = report_config
+        
         result = await executor.execute_report("combined_report")
     finally:
         if executor is not None:

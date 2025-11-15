@@ -1,0 +1,35 @@
+id: health_alert
+title: System Health Alert
+provider: postgres_test
+query:
+  text: "SELECT \n  COUNT(*) as total_services,\n  COUNT(CASE WHEN status = 'healthy'\
+    \ THEN 1 END) as healthy_count,\n  COUNT(CASE WHEN status = 'degraded' THEN 1\
+    \ END) as degraded_count,\n  COUNT(CASE WHEN status NOT IN ('healthy', 'degraded')\
+    \ THEN 1 END) as down_count\nFROM system_health\n"
+render:
+  type: html
+  options:
+    template: "<div style=\"font-family: Arial, sans-serif;\">\n  {% set health_pct\
+      \ = (data[0].healthy_count / data[0].total_services * 100)|round %}\n  {% if\
+      \ data[0].down_count > 0 %}\n  <div style=\"background: #fee2e2; border-left:\
+      \ 4px solid #dc2626; padding: 16px; border-radius: 4px;\">\n    <div style=\"\
+      display: flex; align-items: center; margin-bottom: 8px;\">\n      <span style=\"\
+      font-size: 20px; margin-right: 8px;\">\u26A0\uFE0F</span>\n      <span style=\"\
+      font-weight: bold; color: #dc2626;\">Critical: Services Down</span>\n    </div>\n\
+      \    <p style=\"margin: 0; color: #991b1b;\">{{ data[0].down_count }} service(s)\
+      \ are currently down. Immediate attention required.</p>\n  </div>\n  {% elif\
+      \ data[0].degraded_count > 0 %}\n  <div style=\"background: #fef3c7; border-left:\
+      \ 4px solid #f59e0b; padding: 16px; border-radius: 4px;\">\n    <div style=\"\
+      display: flex; align-items: center; margin-bottom: 8px;\">\n      <span style=\"\
+      font-size: 20px; margin-right: 8px;\">\u26A1</span>\n      <span style=\"font-weight:\
+      \ bold; color: #d97706;\">Warning: Degraded Performance</span>\n    </div>\n\
+      \    <p style=\"margin: 0; color: #92400e;\">{{ data[0].degraded_count }} service(s)\
+      \ experiencing degraded performance. {{ data[0].healthy_count }} services healthy.</p>\n\
+      \  </div>\n  {% else %}\n  <div style=\"background: #d1fae5; border-left: 4px\
+      \ solid #10b981; padding: 16px; border-radius: 4px;\">\n    <div style=\"display:\
+      \ flex; align-items: center; margin-bottom: 8px;\">\n      <span style=\"font-size:\
+      \ 20px; margin-right: 8px;\">\u2705</span>\n      <span style=\"font-weight:\
+      \ bold; color: #059669;\">All Systems Operational</span>\n    </div>\n    <p\
+      \ style=\"margin: 0; color: #065f46;\">All {{ data[0].total_services }} services\
+      \ are running smoothly. System health: {{ health_pct }}%</p>\n  </div>\n  {%\
+      \ endif %}\n</div>\n"

@@ -1,0 +1,29 @@
+# =============================================================================
+# Component: Hourly Sales Pattern
+# =============================================================================
+
+id: hourly_pattern
+title: Hourly Sales Pattern
+description: Sales distribution throughout the day
+provider: postgres_sales
+
+query:
+  text: |
+    SELECT 
+      EXTRACT(HOUR FROM created_at) as hour,
+      SUM(amount) as revenue,
+      COUNT(*) as orders
+    FROM sales
+    WHERE date = CURRENT_DATE
+    GROUP BY EXTRACT(HOUR FROM created_at)
+    ORDER BY hour
+
+render:
+  type: chart
+  options:
+    chart_type: area
+    x_field: hour
+    y_field: revenue
+    title: Hourly Sales Pattern
+    x_label: Hour of Day
+    y_label: Revenue ($)

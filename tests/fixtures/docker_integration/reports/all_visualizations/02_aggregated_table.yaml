@@ -1,0 +1,10 @@
+id: aggregated_table
+title: Aggregated Sales by Region
+provider: postgres_test
+query:
+  text: "SELECT \n  region,\n  COUNT(*) as transaction_count,\n  SUM(revenue) as total_revenue,\n\
+    \  SUM(units_sold) as total_units,\n  ROUND(AVG(revenue), 2) as avg_revenue,\n\
+    \  MIN(sale_date) as first_sale,\n  MAX(sale_date) as last_sale\nFROM sales_metrics\n\
+    GROUP BY region\nORDER BY total_revenue DESC\n"
+render:
+  type: table

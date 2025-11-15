@@ -1,0 +1,14 @@
+id: average_rating
+title: Overall Average Rating
+provider: postgres_test
+query:
+  text: 'SELECT CAST(ROUND(AVG(rating::NUMERIC), 2) AS FLOAT) as avg_rating
+
+    FROM customer_feedback
+
+    '
+render:
+  type: text
+  options:
+    template: 'Average Customer Rating: {value} out of 5 stars'
+    value_path: avg_rating

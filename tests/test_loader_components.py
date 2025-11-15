@@ -80,7 +80,7 @@ providers:
     (dir_path / "providers.yaml").write_text(yaml_content, encoding="utf-8")
 
     reader = YAMLFileReader()
-    documents = reader.read_directory(dir_path)
+    documents = reader.read_providers_directory(dir_path)
 
     assert len(documents) == 2
     assert documents[0]["id"] == "provider1"
@@ -102,7 +102,8 @@ reports:
     (dir_path / "reports.yaml").write_text(yaml_content, encoding="utf-8")
 
     reader = YAMLFileReader()
-    documents = reader.read_directory(dir_path)
+    # For reports, we now use folder-based loading, but test the old extraction logic
+    documents = reader.read_providers_directory(dir_path)  # Uses same extraction logic
 
     assert len(documents) == 2
     assert documents[0]["id"] == "report1"

@@ -1,0 +1,9 @@
+id: product_performance
+title: Product Performance
+provider: postgres_test
+query:
+  text: "SELECT \n  product,\n  SUM(revenue) as total_revenue,\n  SUM(units_sold)\
+    \ as total_units,\n  ROUND(SUM(revenue) / NULLIF(SUM(units_sold), 0), 2) as price_per_unit\n\
+    FROM sales_metrics\nGROUP BY product\nORDER BY total_revenue DESC\n"
+render:
+  type: table

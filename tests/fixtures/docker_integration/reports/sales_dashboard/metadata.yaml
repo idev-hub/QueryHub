@@ -1,0 +1,8 @@
+id: sales_dashboard
+title: Sales & Health Dashboard
+description: Integration test report with PostgreSQL data
+html_template_path: report.html.j2
+email:
+  to:
+  - integration-test@queryhub.test
+  subject: '[Test] Sales & Health Dashboard Report'

@@ -1,0 +1,10 @@
+id: customer_satisfaction
+title: Customer Satisfaction Summary
+provider: postgres_test
+query:
+  text: "SELECT \n  product,\n  COUNT(*) as feedback_count,\n  ROUND(AVG(rating),\
+    \ 2) as avg_rating,\n  COUNT(CASE WHEN rating >= 4 THEN 1 END) as positive_count,\n\
+    \  COUNT(CASE WHEN rating <= 2 THEN 1 END) as negative_count\nFROM customer_feedback\n\
+    GROUP BY product\nORDER BY avg_rating DESC\n"
+render:
+  type: table

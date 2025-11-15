@@ -1,0 +1,12 @@
+id: revenue_by_region_bar
+title: Revenue by Region (Bar Chart)
+provider: postgres_test
+query:
+  text: "SELECT \n  region,\n  SUM(revenue) as total_revenue\nFROM sales_metrics\n\
+    GROUP BY region\nORDER BY total_revenue DESC\n"
+render:
+  type: chart
+  options:
+    chart_type: bar
+    x_field: region
+    y_field: total_revenue

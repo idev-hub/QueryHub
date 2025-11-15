@@ -1,0 +1,14 @@
+id: health_scatter
+title: System Health - Response Time vs Errors (Scatter Plot)
+provider: postgres_test
+timeout_seconds: 60
+query:
+  text: "SELECT \n  service_name,\n  response_time_ms,\n  error_count,\n  status\n\
+    FROM system_health\n"
+render:
+  type: chart
+  options:
+    chart_type: scatter
+    x_field: response_time_ms
+    y_field: error_count
+    color: status

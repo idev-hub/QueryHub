@@ -21,7 +21,7 @@ from pathlib import Path
 
 import pytest
 
-from queryhub.services import ReportExecutor
+from queryhub.services import QueryHubApplicationBuilder
 
 
 def is_docker_running() -> bool:
@@ -142,17 +142,24 @@ async def test_postgres_connection(containers_ready: bool, monkeypatch) -> None:
 async def test_postgres_sales_report(containers_ready: bool, monkeypatch, tmp_path) -> None:
     """Test full report execution with PostgreSQL backend."""
     config_dir = Path("tests/fixtures/docker_integration")
-    templates_dir = Path("templates")
+    templates_dir = Path("config/templates")
 
     dsn = "postgresql+asyncpg://testuser:testpass@localhost:5434/testdb"
     monkeypatch.setenv("POSTGRES_DSN", dsn)
 
-    executor = await ReportExecutor.from_config_dir(
-        config_dir,
+    builder = QueryHubApplicationBuilder(
+        config_dir=config_dir,
         templates_dir=templates_dir,
     )
+    executor = await builder.create_executor()
 
     try:
+        # Load the report from folder
+        from queryhub.config.loader import ConfigLoader
+        loader = ConfigLoader(config_dir)
+        report_config = loader.load_report_from_folder(config_dir / "reports" / "sales_dashboard")
+        executor.settings.reports[report_config.id] = report_config
+        
         result = await executor.execute_report("sales_dashboard")
     finally:
         await executor.shutdown()
@@ -233,8 +240,9 @@ async def test_postgres_query_with_parameters(
     config_dir = tmp_path / "config"
     providers_dir = config_dir / "providers"
     reports_dir = config_dir / "reports"
+    param_test_dir = reports_dir / "param_test"
     providers_dir.mkdir(parents=True)
-    reports_dir.mkdir(parents=True)
+    param_test_dir.mkdir(parents=True)
 
     dsn = "postgresql+asyncpg://testuser:testpass@localhost:5434/testdb"
     monkeypatch.setenv("POSTGRES_DSN", dsn)
@@ -262,39 +270,52 @@ async def test_postgres_query_with_parameters(
     )
     (providers_dir / "providers.yaml").write_text(providers_yaml, encoding="utf-8")
 
-    report_yaml = textwrap.dedent(
+    # Create folder-based report
+    metadata_yaml = textwrap.dedent(
         """\
         id: parameterized_report
         title: Sales Report with Parameters
         template: report.html.j2
-        components:
-          - id: filtered_sales
-            title: Sales by Region
-            provider: postgres_test
-            query:
-              text: |
-                SELECT region, product, revenue, units_sold
-                FROM sales_metrics
-                WHERE region = :target_region
-                ORDER BY revenue DESC
-              parameters:
-                target_region: "North America"
-            render:
-              type: table
         email:
           to:
             - test@example.com
         """
     )
-    (reports_dir / "param_test.yaml").write_text(report_yaml, encoding="utf-8")
+    (param_test_dir / "metadata.yaml").write_text(metadata_yaml, encoding="utf-8")
+    
+    component_yaml = textwrap.dedent(
+        """\
+        id: filtered_sales
+        title: Sales by Region
+        provider: postgres_test
+        query:
+          text: |
+            SELECT region, product, revenue, units_sold
+            FROM sales_metrics
+            WHERE region = :target_region
+            ORDER BY revenue DESC
+          parameters:
+            target_region: "North America"
+        render:
+          type: table
+        """
+    )
+    (param_test_dir / "01_filtered_sales.yaml").write_text(component_yaml, encoding="utf-8")
 
-    templates_dir = Path("templates")
-    executor = await ReportExecutor.from_config_dir(
-        config_dir,
+    templates_dir = Path("config/templates")
+    builder = QueryHubApplicationBuilder(
+        config_dir=config_dir,
         templates_dir=templates_dir,
     )
+    executor = await builder.create_executor()
 
     try:
+        # Load report from folder
+        from queryhub.config.loader import ConfigLoader
+        loader = ConfigLoader(config_dir)
+        report_config = loader.load_report_from_folder(param_test_dir)
+        executor.settings.reports[report_config.id] = report_config
+        
         result = await executor.execute_report("parameterized_report")
     finally:
         await executor.shutdown()
@@ -320,14 +341,17 @@ async def test_postgres_aggregation_queries(containers_ready: bool, monkeypatch,
     config_dir = tmp_path / "config"
     providers_dir = config_dir / "providers"
     reports_dir = config_dir / "reports"
+    agg_test_dir = reports_dir / "agg_test"
+    smtp_dir = config_dir / "smtp"
     providers_dir.mkdir(parents=True)
-    reports_dir.mkdir(parents=True)
+    agg_test_dir.mkdir(parents=True)
+    smtp_dir.mkdir(parents=True)
 
     dsn = "postgresql+asyncpg://testuser:testpass@localhost:5434/testdb"
     monkeypatch.setenv("POSTGRES_DSN", dsn)
 
     smtp_yaml = textwrap.dedent(
-        """\
+        """
         host: localhost
         port: 1025
         use_tls: false
@@ -335,7 +359,7 @@ async def test_postgres_aggregation_queries(containers_ready: bool, monkeypatch,
         default_from: reports@test.local
         """
     )
-    (config_dir / "smtp.yaml").write_text(smtp_yaml, encoding="utf-8")
+    (smtp_dir / "default.yaml").write_text(smtp_yaml, encoding="utf-8")
 
     providers_yaml = textwrap.dedent(
         """\
@@ -348,56 +372,75 @@ async def test_postgres_aggregation_queries(containers_ready: bool, monkeypatch,
     )
     (providers_dir / "providers.yaml").write_text(providers_yaml, encoding="utf-8")
 
-    report_yaml = textwrap.dedent(
+    # Create folder-based report
+    metadata_yaml = textwrap.dedent(
         """\
         id: aggregation_report
         title: Advanced Analytics Report
         template: report.html.j2
-        components:
-          - id: revenue_stats
-            title: Revenue Statistics
-            provider: postgres_test
-            query:
-              text: |
-                SELECT 
-                  COUNT(DISTINCT region) as region_count,
-                  COUNT(DISTINCT product) as product_count,
-                  SUM(revenue) as total_revenue,
-                  AVG(revenue) as avg_revenue,
-                  MIN(revenue) as min_revenue,
-                  MAX(revenue) as max_revenue,
-                  SUM(units_sold) as total_units
-                FROM sales_metrics
-            render:
-              type: table
-          - id: top_products
-            title: Top Products by Revenue
-            provider: postgres_test
-            query:
-              text: |
-                SELECT 
-                  product,
-                  SUM(revenue) as total_revenue,
-                  COUNT(*) as transaction_count
-                FROM sales_metrics
-                GROUP BY product
-                ORDER BY total_revenue DESC
-            render:
-              type: table
         email:
           to:
             - analytics@test.local
         """
     )
-    (reports_dir / "agg_test.yaml").write_text(report_yaml, encoding="utf-8")
+    (agg_test_dir / "metadata.yaml").write_text(metadata_yaml, encoding="utf-8")
+    
+    component1_yaml = textwrap.dedent(
+        """\
+        id: revenue_stats
+        title: Revenue Statistics
+        provider: postgres_test
+        query:
+          text: |
+            SELECT 
+              COUNT(DISTINCT region) as region_count,
+              COUNT(DISTINCT product) as product_count,
+              SUM(revenue) as total_revenue,
+              AVG(revenue) as avg_revenue,
+              MIN(revenue) as min_revenue,
+              MAX(revenue) as max_revenue,
+              SUM(units_sold) as total_units
+            FROM sales_metrics
+        render:
+          type: table
+        """
+    )
+    (agg_test_dir / "01_revenue_stats.yaml").write_text(component1_yaml, encoding="utf-8")
+    
+    component2_yaml = textwrap.dedent(
+        """\
+        id: top_products
+        title: Top Products by Revenue
+        provider: postgres_test
+        query:
+          text: |
+            SELECT 
+              product,
+              SUM(revenue) as total_revenue,
+              COUNT(*) as transaction_count
+            FROM sales_metrics
+            GROUP BY product
+            ORDER BY total_revenue DESC
+        render:
+          type: table
+        """
+    )
+    (agg_test_dir / "02_top_products.yaml").write_text(component2_yaml, encoding="utf-8")
 
-    templates_dir = Path("templates")
-    executor = await ReportExecutor.from_config_dir(
-        config_dir,
+    templates_dir = Path("config/templates")
+    builder = QueryHubApplicationBuilder(
+        config_dir=config_dir,
         templates_dir=templates_dir,
     )
+    executor = await builder.create_executor()
 
     try:
+        # Load report from folder
+        from queryhub.config.loader import ConfigLoader
+        loader = ConfigLoader(config_dir)
+        report_config = loader.load_report_from_folder(agg_test_dir)
+        executor.settings.reports[report_config.id] = report_config
+        
         result = await executor.execute_report("aggregation_report")
     finally:
         await executor.shutdown()
@@ -429,17 +472,24 @@ async def test_postgres_aggregation_queries(containers_ready: bool, monkeypatch,
 async def test_concurrent_queries(containers_ready: bool, monkeypatch) -> None:
     """Test executing multiple queries concurrently."""
     config_dir = Path("tests/fixtures/docker_integration")
-    templates_dir = Path("templates")
+    templates_dir = Path("config/templates")
 
     dsn = "postgresql+asyncpg://testuser:testpass@localhost:5434/testdb"
     monkeypatch.setenv("POSTGRES_DSN", dsn)
 
-    executor = await ReportExecutor.from_config_dir(
-        config_dir,
+    builder = QueryHubApplicationBuilder(
+        config_dir=config_dir,
         templates_dir=templates_dir,
     )
+    executor = await builder.create_executor()
 
     try:
+        # Load the report from folder
+        from queryhub.config.loader import ConfigLoader
+        loader = ConfigLoader(config_dir)
+        report_config = loader.load_report_from_folder(config_dir / "reports" / "sales_dashboard")
+        executor.settings.reports[report_config.id] = report_config
+        
         # Execute the same report multiple times concurrently
         tasks = [executor.execute_report("sales_dashboard") for _ in range(3)]
         results = await asyncio.gather(*tasks)
@@ -458,17 +508,24 @@ async def test_concurrent_queries(containers_ready: bool, monkeypatch) -> None:
 async def test_all_visualizations(containers_ready: bool, monkeypatch) -> None:
     """Test all available visualization types with real data."""
     config_dir = Path("tests/fixtures/docker_integration")
-    templates_dir = Path("templates")
+    templates_dir = Path("config/templates")
 
     dsn = "postgresql+asyncpg://testuser:testpass@localhost:5434/testdb"
     monkeypatch.setenv("POSTGRES_DSN", dsn)
 
-    executor = await ReportExecutor.from_config_dir(
-        config_dir,
+    builder = QueryHubApplicationBuilder(
+        config_dir=config_dir,
         templates_dir=templates_dir,
     )
+    executor = await builder.create_executor()
 
     try:
+        # Load the report from folder
+        from queryhub.config.loader import ConfigLoader
+        loader = ConfigLoader(config_dir)
+        report_config = loader.load_report_from_folder(config_dir / "reports" / "all_visualizations")
+        executor.settings.reports[report_config.id] = report_config
+        
         result = await executor.execute_report("all_visualizations")
     finally:
         await executor.shutdown()
@@ -549,17 +606,24 @@ async def test_all_visualizations(containers_ready: bool, monkeypatch) -> None:
 async def test_chart_visualizations(containers_ready: bool, monkeypatch) -> None:
     """Test chart rendering with Plotly visualizations."""
     config_dir = Path("tests/fixtures/docker_integration")
-    templates_dir = Path("templates")
+    templates_dir = Path("config/templates")
 
     dsn = "postgresql+asyncpg://testuser:testpass@localhost:5434/testdb"
     monkeypatch.setenv("POSTGRES_DSN", dsn)
 
-    executor = await ReportExecutor.from_config_dir(
-        config_dir,
+    builder = QueryHubApplicationBuilder(
+        config_dir=config_dir,
         templates_dir=templates_dir,
     )
+    executor = await builder.create_executor()
 
     try:
+        # Load the report from folder
+        from queryhub.config.loader import ConfigLoader
+        loader = ConfigLoader(config_dir)
+        report_config = loader.load_report_from_folder(config_dir / "reports" / "chart_visualizations")
+        executor.settings.reports[report_config.id] = report_config
+        
         result = await executor.execute_report("chart_visualizations")
     finally:
         await executor.shutdown()
@@ -639,19 +703,26 @@ async def test_chart_email_generation(containers_ready: bool, monkeypatch) -> No
     from datetime import datetime
 
     config_dir = Path("tests/fixtures/docker_integration")
-    templates_dir = Path("templates")
+    templates_dir = Path("config/templates")
 
     dsn = "postgresql+asyncpg://testuser:testpass@localhost:5434/testdb"
     monkeypatch.setenv("POSTGRES_DSN", dsn)
 
     # Use email_mode=True to render charts as static images
-    executor = await ReportExecutor.from_config_dir(
-        config_dir,
+    builder = QueryHubApplicationBuilder(
+        config_dir=config_dir,
         templates_dir=templates_dir,
         email_mode=True,
     )
+    executor = await builder.create_executor()
 
     try:
+        # Load the report from folder
+        from queryhub.config.loader import ConfigLoader
+        loader = ConfigLoader(config_dir)
+        report_config = loader.load_report_from_folder(config_dir / "reports" / "chart_visualizations")
+        executor.settings.reports[report_config.id] = report_config
+        
         result = await executor.execute_report("chart_visualizations")
     finally:
         await executor.shutdown()
@@ -725,17 +796,24 @@ async def test_email_generation(containers_ready: bool, monkeypatch) -> None:
     from datetime import datetime
 
     config_dir = Path("tests/fixtures/docker_integration")
-    templates_dir = Path("templates")
+    templates_dir = Path("config/templates")
 
     dsn = "postgresql+asyncpg://testuser:testpass@localhost:5434/testdb"
     monkeypatch.setenv("POSTGRES_DSN", dsn)
 
-    executor = await ReportExecutor.from_config_dir(
-        config_dir,
+    builder = QueryHubApplicationBuilder(
+        config_dir=config_dir,
         templates_dir=templates_dir,
     )
+    executor = await builder.create_executor()
 
     try:
+        # Load the report from folder
+        from queryhub.config.loader import ConfigLoader
+        loader = ConfigLoader(config_dir)
+        report_config = loader.load_report_from_folder(config_dir / "reports" / "all_visualizations")
+        executor.settings.reports[report_config.id] = report_config
+        
         result = await executor.execute_report("all_visualizations")
     finally:
         await executor.shutdown()

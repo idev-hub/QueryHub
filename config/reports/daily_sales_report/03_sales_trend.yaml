@@ -1,0 +1,29 @@
+# =============================================================================
+# Component: Daily Sales Trend
+# =============================================================================
+
+id: sales_trend
+title: 30-Day Sales Trend
+description: Daily sales over the past 30 days
+provider: postgres_sales
+
+query:
+  text: |
+    SELECT 
+      date,
+      SUM(amount) as revenue,
+      COUNT(*) as orders
+    FROM sales
+    WHERE date >= CURRENT_DATE - INTERVAL '30 days'
+    GROUP BY date
+    ORDER BY date
+
+render:
+  type: chart
+  options:
+    chart_type: line
+    x_field: date
+    y_field: revenue
+    title: Daily Revenue Trend (30 Days)
+    x_label: Date
+    y_label: Revenue ($)

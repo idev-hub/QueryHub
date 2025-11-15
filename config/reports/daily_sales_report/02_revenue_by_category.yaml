@@ -1,0 +1,33 @@
+# =============================================================================
+# Component: Revenue by Product Category
+# =============================================================================
+
+id: revenue_by_category
+title: Revenue by Product Category
+description: Breakdown of sales by product category
+provider: postgres_sales
+
+query:
+  text: |
+    SELECT 
+      category,
+      COUNT(*) as orders,
+      SUM(amount) as revenue,
+      ROUND(AVG(amount), 2) as avg_order_value,
+      ROUND(SUM(amount) * 100.0 / SUM(SUM(amount)) OVER (), 2) as revenue_pct
+    FROM sales s
+    JOIN products p ON s.product_id = p.id
+    WHERE s.date = CURRENT_DATE
+    GROUP BY category
+    ORDER BY revenue DESC
+
+render:
+  type: table
+  options:
+    columns: [category, orders, revenue, avg_order_value, revenue_pct]
+    headers:
+      category: Category
+      orders: Orders
+      revenue: Revenue
+      avg_order_value: Avg Order Value
+      revenue_pct: Revenue %

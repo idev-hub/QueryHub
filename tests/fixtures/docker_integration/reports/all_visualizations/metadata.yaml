@@ -1,0 +1,8 @@
+id: all_visualizations
+title: All Visualization Types Test
+description: Test report showcasing all available visualization types
+html_template_path: report.html.j2
+email:
+  to:
+  - test@queryhub.local
+  subject: '[Test] All Visualization Types'

@@ -1,0 +1,22 @@
+id: top_regions_list
+title: Top Performing Regions
+provider: postgres_test
+query:
+  text: "SELECT \n  region,\n  CAST(SUM(revenue) AS FLOAT) as total_revenue,\n  COUNT(*)\
+    \ as transactions\nFROM sales_metrics\nGROUP BY region\nORDER BY total_revenue\
+    \ DESC\nLIMIT 3\n"
+render:
+  type: html
+  options:
+    template: "<div style=\"font-family: Arial, sans-serif;\">\n  {% for row in data\
+      \ %}\n  <div style=\"display: flex; align-items: center; padding: 12px; margin-bottom:\
+      \ 8px; background: {% if loop.index == 1 %}#ffd700{% elif loop.index == 2 %}#c0c0c0{%\
+      \ else %}#cd7f32{% endif %}20; border-left: 4px solid {% if loop.index == 1\
+      \ %}#ffd700{% elif loop.index == 2 %}#c0c0c0{% else %}#cd7f32{% endif %}; border-radius:\
+      \ 4px;\">\n    <div style=\"font-size: 24px; font-weight: bold; width: 40px;\
+      \ color: {% if loop.index == 1 %}#ffd700{% elif loop.index == 2 %}#c0c0c0{%\
+      \ else %}#cd7f32{% endif %};\">#{{ loop.index }}</div>\n    <div style=\"flex:\
+      \ 1;\">\n      <div style=\"font-weight: bold; font-size: 16px;\">{{ row.region\
+      \ }}</div>\n      <div style=\"color: #666; font-size: 14px;\">{{ row.transactions\
+      \ }} transactions \u2022 {{ \"{:,.2f}\".format(row.total_revenue) }}</div>\n\
+      \    </div>\n  </div>\n  {% endfor %}\n</div>\n"

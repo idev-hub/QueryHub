@@ -1,0 +1,12 @@
+id: ratings_by_product_bar
+title: Average Customer Rating by Product (Bar Chart)
+provider: postgres_test
+query:
+  text: "SELECT \n  product,\n  ROUND(AVG(rating), 2) as avg_rating\nFROM customer_feedback\n\
+    GROUP BY product\nORDER BY avg_rating DESC\n"
+render:
+  type: chart
+  options:
+    chart_type: bar
+    x_field: product
+    y_field: avg_rating

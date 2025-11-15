@@ -1,0 +1,14 @@
+id: transaction_count
+title: Transaction Count
+provider: postgres_test
+query:
+  text: 'SELECT CAST(COUNT(*) AS INTEGER) as count
+
+    FROM sales_metrics
+
+    '
+render:
+  type: text
+  options:
+    template: 'Total Transactions: {value}'
+    value_path: count

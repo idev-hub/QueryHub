@@ -1,0 +1,12 @@
+id: transactions_trend_line
+title: Daily Transaction Count (Line Chart)
+provider: postgres_test
+query:
+  text: "SELECT \n  DATE(sale_date) as date,\n  COUNT(*) as transaction_count\nFROM\
+    \ sales_metrics\nGROUP BY DATE(sale_date)\nORDER BY date\n"
+render:
+  type: chart
+  options:
+    chart_type: line
+    x_field: date
+    y_field: transaction_count
