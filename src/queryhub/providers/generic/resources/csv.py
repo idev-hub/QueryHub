@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import asyncio
 import csv
+import logging
 from pathlib import Path
 from typing import Any, Mapping, Optional
 
@@ -14,6 +15,8 @@ from ....config.provider_models import ProviderConfig
 from ....core.credentials import CredentialRegistry
 from ....core.errors import ProviderExecutionError, ProviderInitializationError
 from ...base_query_provider import BaseQueryProvider, QueryResult
+
+_LOGGER = logging.getLogger(__name__)
 
 
 class CSVQueryProvider(BaseQueryProvider):
@@ -31,6 +34,7 @@ class CSVQueryProvider(BaseQueryProvider):
         if config.type != "csv" or not config.resource.csv:
             raise ProviderInitializationError("CSVQueryProvider requires csv resource configuration")
         self._root_path = Path(config.resource.csv.root_path)
+        _LOGGER.info("CSV provider initialized: root_path=%s", self._root_path)
 
     @property
     def csv_config(self):
@@ -52,16 +56,24 @@ class CSVQueryProvider(BaseQueryProvider):
             raise ProviderExecutionError("CSV queries require a 'path' or 'file'")
 
         full_path = self._root_path / relative_path
+        _LOGGER.debug("Reading CSV file: %s", full_path)
         if not full_path.exists():
+            _LOGGER.error("CSV file not found: %s", full_path)
             raise ProviderExecutionError(f"CSV file not found: {full_path}")
 
         delimiter = query.get("delimiter") or self.csv_config.delimiter
         encoding = query.get("encoding") or self.csv_config.encoding
 
         rows = await asyncio.to_thread(self._read_csv, full_path, delimiter, encoding)
+        _LOGGER.debug("CSV file loaded: %d row(s)", len(rows))
 
         filters = query.get("filters") or []
+        if filters:
+            _LOGGER.debug("Applying %d filter(s) to CSV data", len(filters))
         filtered = self._apply_filters(rows, filters)
+        
+        if filters:
+            _LOGGER.debug("Filters applied: %d row(s) remaining", len(filtered))
 
         return QueryResult(data=filtered, metadata={"rowcount": len(filtered)})
 

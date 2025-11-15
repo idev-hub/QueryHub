@@ -13,6 +13,7 @@ The design follows SOLID principles:
 
 from __future__ import annotations
 
+import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Mapping, Optional
@@ -22,6 +23,8 @@ if TYPE_CHECKING:
     from ..core.credentials import CredentialRegistry
 
 from ..core.errors import ProviderInitializationError
+
+_LOGGER = logging.getLogger(__name__)
 
 
 @dataclass(slots=True, frozen=True)
@@ -75,6 +78,7 @@ class BaseQueryProvider(ABC):
         """
         self._config = config
         self._credential_registry = credential_registry
+        _LOGGER.debug("Initialized provider: %s (type=%s)", config.id, config.type)
 
     @property
     def config(self) -> ProviderConfig:
