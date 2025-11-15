@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Mapping
 
 from ..config import ConfigLoader
-from ..config.models import ProviderConfig
+from ..config.provider_models import ProviderConfig
 from ..core.contracts import (
     ConfigLoaderProtocol,
     ProviderFactoryProtocol,

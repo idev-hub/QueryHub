@@ -56,30 +56,53 @@ class ExponentialBackoffRetry(RetryStrategy[T]):
     ) -> T:
         """Execute operation with exponential backoff retry."""
         last_exception: Exception | None = None
+        _LOGGER.debug(
+            "Starting retry operation (max_attempts=%d, backoff=%.2fs)",
+            self._policy.max_attempts,
+            self._policy.backoff_seconds,
+        )
 
         for attempt in range(self._policy.max_attempts):
             try:
-                return await operation()
+                _LOGGER.debug("Executing attempt %d/%d", attempt + 1, self._policy.max_attempts)
+                result = await operation()
+                if attempt > 0:
+                    _LOGGER.info(
+                        "Operation succeeded on attempt %d/%d",
+                        attempt + 1,
+                        self._policy.max_attempts,
+                    )
+                return result
             except Exception as exc:  # pylint: disable=broad-except
                 last_exception = exc
+                exc_type = type(exc).__name__
 
                 if should_retry and not should_retry(exc):
+                    _LOGGER.warning(
+                        "Non-retryable error on attempt %d/%d: %s: %s",
+                        attempt + 1,
+                        self._policy.max_attempts,
+                        exc_type,
+                        exc,
+                    )
                     raise
 
                 if attempt < self._policy.max_attempts - 1:
                     delay = self._calculate_delay(attempt)
-                    _LOGGER.debug(
-                        "Attempt %d/%d failed: %s. Retrying in %.2fs",
+                    _LOGGER.warning(
+                        "Attempt %d/%d failed: %s: %s. Retrying in %.2fs",
                         attempt + 1,
                         self._policy.max_attempts,
+                        exc_type,
                         exc,
                         delay,
                     )
                     await asyncio.sleep(delay)
                 else:
                     _LOGGER.error(
-                        "All %d attempts failed. Last error: %s",
+                        "All %d attempts failed. Last error: %s: %s",
                         self._policy.max_attempts,
+                        exc_type,
                         exc,
                     )
 

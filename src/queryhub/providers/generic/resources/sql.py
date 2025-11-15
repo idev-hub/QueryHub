@@ -14,9 +14,9 @@ from sqlalchemy.engine import URL
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker, create_async_engine
 
-from ....config.models import SQLProviderConfig
+from ....config.provider_models import ProviderConfig
 from ....core.credentials import CredentialRegistry
-from ....core.errors import ProviderExecutionError
+from ....core.errors import ProviderExecutionError, ProviderInitializationError
 from ...base_credentials import BaseCredential
 from ...base_query_provider import BaseQueryProvider, QueryResult
 
@@ -30,18 +30,21 @@ class SQLQueryProvider(BaseQueryProvider):
 
     def __init__(
         self,
-        config: SQLProviderConfig,
+        config: ProviderConfig,
         credential_registry: Optional[CredentialRegistry] = None,
     ) -> None:
         super().__init__(config, credential_registry)
+        if config.type != "sql" or not config.resource.sql:
+            raise ProviderInitializationError("SQLQueryProvider requires sql resource configuration")
         self._credential: Optional[BaseCredential] = None
         self._engine: Optional[AsyncEngine] = None
         self._engine_lock = asyncio.Lock()
         self._sessionmaker: Optional[async_sessionmaker] = None
 
     @property
-    def config(self) -> SQLProviderConfig:
-        return super().config  # type: ignore[return-value]
+    def sql_config(self):
+        """Get SQL-specific configuration from resource."""
+        return self.config.resource.sql
 
     async def execute(self, query: Mapping[str, Any]) -> QueryResult:
         """Execute a SQL query.
@@ -91,15 +94,15 @@ class SQLQueryProvider(BaseQueryProvider):
 
     async def _create_engine(self) -> AsyncEngine:
         """Create SQL engine using credential from registry."""
-        target = self.config.target
+        target = self.sql_config
 
         # Separate SQLAlchemy engine options from connection options
         engine_options = {"echo", "pool_size", "pool_recycle", "max_overflow", "pool_timeout"}
         connect_args: dict[str, Any] = {
-            k: v for k, v in target.options.items() if k not in engine_options
+            k: v for k, v in (target.options or {}).items() if k not in engine_options
         }
         engine_kwargs: dict[str, Any] = {
-            k: v for k, v in target.options.items() if k in engine_options
+            k: v for k, v in (target.options or {}).items() if k in engine_options
         }
 
         # Get credential from registry
@@ -133,30 +136,26 @@ class SQLQueryProvider(BaseQueryProvider):
 
     def _build_url(self, target, cred_data) -> str:
         """Build SQLAlchemy connection URL."""
-        # If connection string provided, use it directly
-        if isinstance(cred_data, str):
-            return cred_data
-
-        # If DSN provided in target, use it
+        # If DSN is provided, use it directly
         if target.dsn:
             return str(target.dsn)
 
-        # Otherwise, build URL from components
+        # Otherwise construct from individual components
         driver = target.driver or "postgresql+asyncpg"
-        username = None
-        password = None
+        host = target.host or cred_data.get("host", "localhost")
+        port = target.port or cred_data.get("port", 5432)
+        database = target.database or cred_data.get("database", "")
+        username = cred_data.get("username", "")
+        password = cred_data.get("password", "")
 
-        if isinstance(cred_data, dict):
-            username = cred_data.get("username")
-            password = cred_data.get("password")
-
-        url = URL.create(
-            drivername=driver,
-            username=username,
-            password=password,
-            host=target.host,
-            port=target.port,
-            database=target.database,
-            query=target.options,
+        return str(
+            URL.create(
+                drivername=driver,
+                username=username,
+                password=password,
+                host=host,
+                port=port,
+                database=database,
+                query=target.options or {},
+            )
         )
-        return str(url)

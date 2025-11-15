@@ -29,6 +29,7 @@ class RecipientResolver:
         overrides: ReportEmailConfig | None,
     ) -> tuple[list[str], list[str], list[str]]:
         """Resolve to, cc, and bcc recipients."""
+        _LOGGER.debug("Resolving email recipients for report: %s", report.id)
         report_email = report.email
 
         to_candidates = (
@@ -38,6 +39,7 @@ class RecipientResolver:
         )
 
         if not to_candidates:
+            _LOGGER.error("No email recipients configured")
             raise EmailError("No email recipients configured")
 
         cc_candidates = (overrides.cc if overrides and overrides.cc else None) or (
@@ -48,11 +50,18 @@ class RecipientResolver:
             report_email.bcc if report_email and report_email.bcc else None
         )
 
-        return (
-            self._normalize_addresses(to_candidates),
-            self._normalize_addresses(cc_candidates),
-            self._normalize_addresses(bcc_candidates),
+        to_recipients = self._normalize_addresses(to_candidates)
+        cc_recipients = self._normalize_addresses(cc_candidates)
+        bcc_recipients = self._normalize_addresses(bcc_candidates)
+        
+        _LOGGER.debug(
+            "Recipients resolved: to=%d, cc=%d, bcc=%d",
+            len(to_recipients),
+            len(cc_recipients),
+            len(bcc_recipients),
         )
+        
+        return (to_recipients, cc_recipients, bcc_recipients)
 
     @staticmethod
     def _normalize_addresses(addresses: Sequence[str] | None) -> list[str]:
@@ -80,6 +89,7 @@ class SubjectFormatter:
             or "{title}"
         )
 
+        _LOGGER.debug("Formatting email subject with template: %s", template_text)
         template = Template(template_text)
         context = {
             "title": report.title,
@@ -88,7 +98,9 @@ class SubjectFormatter:
             "generated_at": result.generated_at,
             "has_failures": result.has_failures,
         }
-        return template.render(context)
+        subject = template.render(context)
+        _LOGGER.debug("Email subject formatted: %s", subject)
+        return subject
 
 
 class MessageBuilder:
@@ -110,6 +122,7 @@ class MessageBuilder:
         overrides: ReportEmailConfig | None,
     ) -> EmailMessage:
         """Build complete email message."""
+        _LOGGER.debug("Building email message for report: %s", result.report.id)
         report = result.report
         to_recipients, cc_recipients, bcc_recipients = self._recipient_resolver.resolve(
             report, overrides
@@ -117,26 +130,31 @@ class MessageBuilder:
         subject = self._subject_formatter.format(report, result, overrides)
         from_address = self._resolve_from_address(overrides)
 
+        _LOGGER.debug("Email from: %s, to: %s", from_address, to_recipients)
         message = EmailMessage()
         message["From"] = from_address
         message["To"] = ", ".join(to_recipients)
 
         if cc_recipients:
             message["Cc"] = ", ".join(cc_recipients)
+            _LOGGER.debug("Email CC: %s", cc_recipients)
 
         if overrides and overrides.reply_to:
             message["Reply-To"] = overrides.reply_to
+            _LOGGER.debug("Email Reply-To: %s", overrides.reply_to)
 
         if bcc_recipients:
             # Include Bcc for testing/debugging (removed before sending)
             message["Bcc"] = ", ".join(bcc_recipients)
+            _LOGGER.debug("Email BCC: %s", bcc_recipients)
 
         message["Subject"] = subject
 
         plain_text = self._build_plain_text(result)
         message.set_content(plain_text)
         message.add_alternative(result.html, subtype="html")
-
+        
+        _LOGGER.debug("Email message built successfully (HTML size: %d bytes)", len(result.html))
         return message
 
     def _resolve_from_address(self, overrides: ReportEmailConfig | None) -> str:
@@ -183,24 +201,36 @@ class EmailClient(EmailSenderProtocol):
         overrides: ReportEmailConfig | None = None,
     ) -> None:
         """Send report via SMTP."""
+        _LOGGER.info("Preparing to send email for report: %s", result.report.title)
         message = self._message_builder.build(result, overrides)
+        _LOGGER.info("Sending email via SMTP (server=%s:%d)", self._config.host, self._config.port)
         await self._send_message(message)
+        _LOGGER.info("Email sent successfully")
 
     async def _send_message(self, message: EmailMessage) -> None:
         """Send email message via SMTP."""
         try:
             import aiosmtplib
         except ImportError as exc:
+            _LOGGER.error("aiosmtplib dependency missing")
             raise EmailError("aiosmtplib dependency missing") from exc
 
         # Extract all recipients
         recipients = self._extract_all_recipients(message)
+        _LOGGER.debug("Total email recipients: %d", len(recipients))
 
         # Remove Bcc header before sending (RFC compliance)
         if "Bcc" in message:
             del message["Bcc"]
 
         try:
+            _LOGGER.debug(
+                "Connecting to SMTP server: %s:%d (TLS=%s, STARTTLS=%s)",
+                self._config.host,
+                self._config.port,
+                self._config.use_tls,
+                self._config.starttls,
+            )
             await aiosmtplib.send(
                 message,
                 hostname=self._config.host,
@@ -212,7 +242,9 @@ class EmailClient(EmailSenderProtocol):
                 timeout=self._config.timeout_seconds,
                 recipients=recipients if recipients else None,
             )
+            _LOGGER.debug("SMTP transmission completed successfully")
         except Exception as exc:
+            _LOGGER.error("Failed to send email: %s", exc, exc_info=True)
             raise EmailError(f"Failed to send email: {exc}") from exc
 
     def _extract_all_recipients(self, message: EmailMessage) -> list[str]:

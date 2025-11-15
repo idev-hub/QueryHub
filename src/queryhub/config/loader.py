@@ -12,7 +12,6 @@ from pydantic import TypeAdapter
 
 from ..core.credentials import CredentialRegistry
 from ..core.errors import ConfigurationError
-from .converters import convert_provider_config
 from .credential_models import CredentialConfig
 from .environment import EnvironmentSubstitutor
 from .models import ReportConfig, Settings, SMTPConfig
@@ -37,13 +36,16 @@ class YAMLFileReader:
             _LOGGER.debug("Config file %s not found", path)
             return None
 
+        _LOGGER.debug("Reading configuration file: %s", path)
         with path.open("r", encoding=self._encoding) as handle:
             raw = handle.read()
 
         data = yaml.safe_load(raw)
         if data is None:
+            _LOGGER.debug("Configuration file %s is empty", path)
             return None
 
+        _LOGGER.debug("Successfully loaded configuration from: %s", path)
         return data
 
     def read_directory(self, directory: Path) -> list[Any]:
@@ -53,11 +55,16 @@ class YAMLFileReader:
             _LOGGER.debug("Config directory %s not found", directory)
             return documents
 
-        for file_path in sorted(directory.glob("*.y*ml")):
+        _LOGGER.debug("Reading configuration directory: %s", directory)
+        yaml_files = sorted(directory.glob("*.y*ml"))
+        _LOGGER.debug("Found %d YAML file(s) in %s", len(yaml_files), directory)
+        
+        for file_path in yaml_files:
             data = self.read_file(file_path)
             if data:
                 documents.extend(self._extract_collection_items(data, file_path))
 
+        _LOGGER.debug("Loaded %d document(s) from directory: %s", len(documents), directory)
         return documents
 
     def _extract_collection_items(self, data: Any, origin: Path) -> list[Any]:
@@ -100,30 +107,39 @@ class ConfigParser:
     """Parse and validate configuration data (SRP)."""
 
     @staticmethod
-    def parse_providers(definitions: Iterable[Mapping[str, Any]]) -> dict[str, Any]:
-        """Parse provider definitions into type-specific configs.
+    def parse_providers(definitions: Iterable[Mapping[str, Any]]) -> dict[str, ProviderConfig]:
+        """Parse provider definitions.
 
-        Returns dict with both generic and converted configs for compatibility.
+        Returns dict mapping provider ID to ProviderConfig.
         """
-        registry: dict[str, Any] = {}
+        _LOGGER.debug("Parsing provider definitions")
+        registry: dict[str, ProviderConfig] = {}
         for item in definitions:
             provider = _PROVIDER_ADAPTER.validate_python(item)
             if provider.id in registry:
                 raise ConfigurationError(f"Duplicate provider id '{provider.id}' detected")
-            # Convert to type-specific config for providers
-            converted = convert_provider_config(provider)
-            registry[provider.id] = converted
+            registry[provider.id] = provider
+            _LOGGER.debug("Registered provider: %s (type=%s)", provider.id, provider.type)
+        _LOGGER.info("Loaded %d provider(s)", len(registry))
         return registry
 
     @staticmethod
     def parse_reports(definitions: Iterable[Mapping[str, Any]]) -> dict[str, ReportConfig]:
         """Parse report definitions."""
+        _LOGGER.debug("Parsing report definitions")
         registry: dict[str, ReportConfig] = {}
         for item in definitions:
             report = _REPORT_ADAPTER.validate_python(item)
             if report.id in registry:
                 raise ConfigurationError(f"Duplicate report id '{report.id}' detected")
             registry[report.id] = report
+            _LOGGER.debug(
+                "Registered report: %s (title='%s', components=%d)",
+                report.id,
+                report.title,
+                len(report.components),
+            )
+        _LOGGER.info("Loaded %d report(s)", len(registry))
         return registry
 
     @staticmethod
@@ -132,7 +148,9 @@ class ConfigParser:
 
         Returns CredentialRegistry with all credentials registered.
         """
+        _LOGGER.debug("Parsing credential definitions")
         registry = CredentialRegistry()
+        credential_count = 0
         for item in definitions:
             credential = _CREDENTIAL_ADAPTER.validate_python(item)
             if not credential.id:
@@ -145,9 +163,14 @@ class ConfigParser:
 
             registry.register(credential.id, cloud_provider, credential_type, credential_config)  # type: ignore[arg-type]
             _LOGGER.debug(
-                f"Registered credential '{credential.id}' ({cloud_provider}/{credential_type})"
+                "Registered credential: %s (provider=%s, type=%s)",
+                credential.id,
+                cloud_provider,
+                credential_type,
             )
+            credential_count += 1
 
+        _LOGGER.info("Loaded %d credential(s)", credential_count)
         return registry
 
 
@@ -178,16 +201,28 @@ class ConfigLoader:
 
     def load_sync(self) -> Settings:
         """Synchronous loading entry point."""
+        _LOGGER.info("Loading QueryHub configuration from: %s", self._root)
+        
+        _LOGGER.debug("Loading SMTP configuration")
         smtp_data = self._load_and_substitute_file(self._root / "smtp.yaml")
+        
+        _LOGGER.debug("Loading provider configurations")
         providers_data = self._load_and_substitute_collection(self._root / "providers")
+        
+        _LOGGER.debug("Loading report configurations")
         reports_data = self._load_and_substitute_collection(self._root / "reports")
+        
+        _LOGGER.debug("Loading credential configurations")
         credentials_data = self._load_and_substitute_collection(self._root / "credentials")
 
         smtp = SMTPConfig.model_validate(smtp_data or {})
+        _LOGGER.debug("SMTP configuration loaded: host=%s, port=%d", smtp.host, smtp.port)
+        
         providers = self._parser.parse_providers(providers_data)
         reports = self._parser.parse_reports(reports_data)
         credentials_registry = self._parser.parse_credentials(credentials_data)
 
+        _LOGGER.info("Configuration loaded successfully")
         return Settings(
             smtp=smtp,
             providers=providers,

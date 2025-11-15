@@ -11,7 +11,7 @@ from ..core.errors import ProviderNotFoundError
 from .base_query_provider import BaseQueryProvider
 
 if TYPE_CHECKING:
-    from ..config.models import ProviderConfig
+    from ..config.provider_models import ProviderConfig
     from ..core.credentials import CredentialRegistry
 
 
@@ -57,18 +57,18 @@ def create_provider(
     if provider_type == "adx":
         from .azure.resources.adx import ADXQueryProvider
 
-        return ADXQueryProvider(config, credential_registry)  # type: ignore[arg-type]
+        return ADXQueryProvider(config, credential_registry)
     elif provider_type == "sql":
         from .generic.resources.sql import SQLQueryProvider
 
-        return SQLQueryProvider(config, credential_registry)  # type: ignore[arg-type]
+        return SQLQueryProvider(config, credential_registry)
     elif provider_type == "rest":
         from .generic.resources.rest import RESTQueryProvider
 
-        return RESTQueryProvider(config, credential_registry)  # type: ignore[arg-type]
+        return RESTQueryProvider(config, credential_registry)
     elif provider_type == "csv":
         from .generic.resources.csv import CSVQueryProvider
 
-        return CSVQueryProvider(config, credential_registry)  # type: ignore[arg-type]
+        return CSVQueryProvider(config, credential_registry)
     else:
         raise ProviderNotFoundError(f"Provider type '{provider_type}' not implemented yet")

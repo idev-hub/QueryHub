@@ -90,11 +90,29 @@ class ReportExecutor:
 
     async def execute_report(self, report_id: str) -> ReportExecutionResult:
         """Execute a complete report with all components."""
+        _LOGGER.info("Starting report execution for report_id='%s'", report_id)
         report = self._get_report(report_id)
+        _LOGGER.info(
+            "Report loaded: '%s' with %d component(s)",
+            report.title,
+            len(report.components),
+        )
+        
+        _LOGGER.debug("Executing report components in parallel")
         components = await self._execute_components(report)
+        
+        _LOGGER.debug("Rendering report HTML template")
         html = await self._render_report(report, components)
+        _LOGGER.debug("Report HTML rendered successfully (size: %d bytes)", len(html))
 
-        return self._build_result(report, components, html)
+        result = self._build_result(report, components, html)
+        _LOGGER.info(
+            "Report execution completed: success=%d, failures=%d, total_duration=%.2fs",
+            result.success_count,
+            result.failure_count,
+            result.metadata.get("total_duration", 0),
+        )
+        return result
 
     @property
     def settings(self) -> Settings:
@@ -108,12 +126,16 @@ class ReportExecutor:
 
     async def shutdown(self) -> None:
         """Cleanup all resources."""
+        _LOGGER.debug("Shutting down report executor and closing provider connections")
         await self._provider_resolver.close_all()
+        _LOGGER.debug("Report executor shutdown complete")
 
     def _get_report(self, report_id: str) -> ReportConfig:
         """Retrieve report configuration."""
+        _LOGGER.debug("Retrieving report configuration for: %s", report_id)
         report = self._settings.reports.get(report_id)
         if report is None:
+            _LOGGER.error("Report '%s' not found in configuration", report_id)
             raise KeyError(f"Report '{report_id}' not found")
         return report
 
@@ -122,8 +144,18 @@ class ReportExecutor:
         report: ReportConfig,
     ) -> List[ComponentExecutionResult]:
         """Execute all report components in parallel."""
+        component_count = len(report.components)
+        _LOGGER.info("Executing %d component(s) in parallel", component_count)
         tasks = [self._component_executor.execute(component) for component in report.components]
-        return await asyncio.gather(*tasks)
+        results = await asyncio.gather(*tasks)
+        
+        success_count = sum(1 for r in results if r.is_success)
+        _LOGGER.info(
+            "Component execution completed: %d/%d successful",
+            success_count,
+            component_count,
+        )
+        return results
 
     async def _render_report(
         self,
@@ -131,13 +163,17 @@ class ReportExecutor:
         components: List[ComponentExecutionResult],
     ) -> str:
         """Render the full report HTML."""
+        _LOGGER.debug("Building template context for report: %s", report.title)
         component_payloads = self._build_component_payloads(components)
         context = {
             "report": report,
             "generated_at": datetime.now(tz=timezone.utc),
             "components": component_payloads,
         }
-        return await self._template_engine.render(report, context)
+        _LOGGER.debug("Rendering report template: %s", report.template)
+        html = await self._template_engine.render(report, context)
+        _LOGGER.debug("Report template rendered successfully")
+        return html
 
     def _build_component_payloads(
         self,

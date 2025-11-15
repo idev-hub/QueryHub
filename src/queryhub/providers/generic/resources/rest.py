@@ -10,9 +10,9 @@ import base64
 from typing import Any, Mapping, Optional
 from urllib.parse import urljoin
 
-from ....config.models import RESTProviderConfig
+from ....config.provider_models import ProviderConfig
 from ....core.credentials import CredentialRegistry
-from ....core.errors import ProviderExecutionError
+from ....core.errors import ProviderExecutionError, ProviderInitializationError
 from ...base_credentials import BaseCredential
 from ...base_query_provider import BaseQueryProvider, QueryResult
 
@@ -25,17 +25,20 @@ class RESTQueryProvider(BaseQueryProvider):
 
     def __init__(
         self,
-        config: RESTProviderConfig,
+        config: ProviderConfig,
         credential_registry: Optional[CredentialRegistry] = None,
     ) -> None:
         super().__init__(config, credential_registry)
+        if config.type != "rest" or not config.resource.rest:
+            raise ProviderInitializationError("RESTQueryProvider requires rest resource configuration")
         self._credential: Optional[BaseCredential] = None
         self._session = None
         self._session_lock = asyncio.Lock()
 
     @property
-    def config(self) -> RESTProviderConfig:
-        return super().config  # type: ignore[return-value]
+    def rest_config(self):
+        """Get REST-specific configuration from resource."""
+        return self.config.resource.rest
 
     async def execute(self, query: Mapping[str, Any]) -> QueryResult:
         """Execute an HTTP request.
@@ -59,9 +62,9 @@ class RESTQueryProvider(BaseQueryProvider):
         if not url:
             if not endpoint:
                 raise ProviderExecutionError("REST queries require an 'endpoint' or 'url'")
-            url = urljoin(self.config.base_url.rstrip("/") + "/", str(endpoint).lstrip("/"))
+            url = urljoin(self.rest_config.base_url.rstrip("/") + "/", str(endpoint).lstrip("/"))
 
-        headers = {**self.config.default_headers, **query.get("headers", {})}
+        headers = {**self.rest_config.default_headers, **query.get("headers", {})}
 
         # Add authentication headers from credential
         auth_header = await self._build_auth_header()
@@ -79,7 +82,7 @@ class RESTQueryProvider(BaseQueryProvider):
             raise ProviderExecutionError("aiohttp dependency missing") from exc
 
         timeout = aiohttp.ClientTimeout(total=timeout_seconds) if timeout_seconds else None
-        request_options = dict(self.config.request_options)
+        request_options = dict(self.rest_config.request_options)
         request_options.update(query.get("request_options", {}))
 
         async with session.request(
@@ -137,7 +140,7 @@ class RESTQueryProvider(BaseQueryProvider):
             raise ProviderExecutionError("aiohttp dependency missing") from exc
 
         timeout = aiohttp.ClientTimeout(total=self.config.default_timeout_seconds)
-        session = aiohttp.ClientSession(timeout=timeout, headers=self.config.default_headers)
+        session = aiohttp.ClientSession(timeout=timeout, headers=self.rest_config.default_headers)
         return session
 
     async def _build_auth_header(self) -> dict[str, str]:

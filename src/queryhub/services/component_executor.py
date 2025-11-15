@@ -49,23 +49,28 @@ class ProviderResolver:
     async def get_provider(self, provider_id: str) -> BaseQueryProvider:
         """Get or create a provider instance (thread-safe lazy loading)."""
         if provider_id in self._providers:
+            _LOGGER.debug("Using cached provider: %s", provider_id)
             return self._providers[provider_id]
 
         async with self._lock:
             if provider_id in self._providers:
                 return self._providers[provider_id]
 
+            _LOGGER.debug("Initializing new provider: %s", provider_id)
             provider = self._factory.create(provider_id)
             self._providers[provider_id] = provider
+            _LOGGER.info("Provider initialized: %s", provider_id)
             return provider
 
     async def close_all(self) -> None:
         """Close all managed providers."""
-        for provider in self._providers.values():
+        _LOGGER.debug("Closing %d provider connection(s)", len(self._providers))
+        for provider_id, provider in self._providers.items():
             try:
+                _LOGGER.debug("Closing provider: %s", provider_id)
                 await provider.close()
             except Exception as exc:  # pylint: disable=broad-except
-                _LOGGER.warning("Failed to close provider %s: %s", provider, exc, exc_info=True)
+                _LOGGER.warning("Failed to close provider %s: %s", provider_id, exc, exc_info=True)
 
 
 class ComponentExecutor:
@@ -84,21 +89,44 @@ class ComponentExecutor:
         component: QueryComponentConfig,
     ) -> ComponentExecutionResult:
         """Execute a single component with retry, timeout, and rendering."""
+        _LOGGER.info("Starting execution of component: %s (%s)", component.id, component.title)
+        _LOGGER.debug(
+            "Component details: provider_id=%s, timeout=%s, retries=%s",
+            component.provider_id,
+            component.timeout_seconds,
+            component.retries,
+        )
         start_time = time.perf_counter()
 
         try:
             provider = await self._provider_resolver.get_provider(component.provider_id)
+            _LOGGER.debug("Executing query for component: %s", component.id)
             result, attempts = await self._execute_query_with_retry(component, provider)
+            _LOGGER.info(
+                "Component '%s' query completed successfully (attempts=%d, rows=%s)",
+                component.id,
+                attempts,
+                result.metadata.get("rowcount", "N/A"),
+            )
+            
+            _LOGGER.debug("Rendering component: %s", component.id)
             rendered_html = await self._render_result(component, result)
+            _LOGGER.debug("Component '%s' rendered successfully", component.id)
             error = None
         except Exception as exc:  # pylint: disable=broad-except
-            _LOGGER.exception("Component %s execution failed", component.id)
+            _LOGGER.exception("Component '%s' execution failed: %s", component.id, exc)
             result = None
             rendered_html = None
             error = exc
             attempts = 0
 
         duration = time.perf_counter() - start_time
+        _LOGGER.info(
+            "Component '%s' execution completed in %.2fs (success=%s)",
+            component.id,
+            duration,
+            error is None,
+        )
 
         return ComponentExecutionResult(
             component=component,
@@ -116,6 +144,11 @@ class ComponentExecutor:
     ) -> tuple[QueryResult, int]:
         """Execute query with retry policy."""
         retry_policy = self._build_retry_policy(component, provider)
+        _LOGGER.debug(
+            "Query retry policy: max_attempts=%d, backoff=%.2fs",
+            retry_policy.max_attempts,
+            retry_policy.backoff_seconds,
+        )
         retry_strategy = ExponentialBackoffRetry[QueryResult](retry_policy)
 
         attempts = 0
@@ -123,18 +156,25 @@ class ComponentExecutor:
         async def operation() -> QueryResult:
             nonlocal attempts
             attempts += 1
+            _LOGGER.debug("Query attempt %d for component: %s", attempts, component.id)
             timeout = component.timeout_seconds or getattr(
                 provider.config, "default_timeout_seconds", 30.0
             )
 
             try:
                 if timeout:
+                    _LOGGER.debug("Executing query with timeout: %.2fs", timeout)
                     return await asyncio.wait_for(
                         provider.execute(component.query),
                         timeout=timeout,
                     )
                 return await provider.execute(component.query)
             except asyncio.TimeoutError as exc:
+                _LOGGER.warning(
+                    "Component '%s' timed out after %.2fs",
+                    component.id,
+                    timeout,
+                )
                 raise ExecutionTimeoutError(
                     f"Component '{component.id}' timed out after {timeout}s"
                 ) from exc
