@@ -210,12 +210,8 @@ async def _list_reports(config_dir: Path) -> None:
     
     _LOGGER.info("Found %d report folder(s)", len(report_folders))
     for report_folder in sorted(report_folders):
-    _LOGGER.info("Found %d report folder(s)", len(report_folders))
-    for report_folder in sorted(report_folders):
         try:
             metadata_path = find_metadata_file(report_folder)
-            metadata = yaml.safe_load(metadata_path.read_text())
-            typer.echo(f"{report_id}\t{report_title}")
             metadata = yaml.safe_load(metadata_path.read_text())
             report_id = metadata.get("id", report_folder.name)
             report_title = metadata.get("title", "No title")
