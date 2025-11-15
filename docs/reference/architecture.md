@@ -26,10 +26,10 @@ QueryHub has been refactored to support multiple cloud providers with a clean se
 
 ```mermaid
 graph TD
-    A[Application Layer<br/>CLI, ReportExecutor, ComponentExecutor] --> B[Core Layer<br/>ProviderFactoryProtocol<br/>CredentialRegistry<br/>DefaultProviderFactory]
-    B --> C[Factory Layer<br/>credential_factory.py<br/>provider_factory.py]
-    C --> D[Abstraction Layer<br/>BaseCredential<br/>BaseQueryProvider<br/>QueryResult]
-    D --> E[Implementation Layer<br/>providers/azure/<br/>providers/aws/<br/>providers/gcp/<br/>providers/generic/]
+    A["Application Layer: CLI, ReportExecutor, ComponentExecutor"] --> B["Core Layer: ProviderFactoryProtocol, CredentialRegistry, DefaultProviderFactory"]
+    B --> C["Factory Layer: credential_factory.py, provider_factory.py"]
+    C --> D["Abstraction Layer: BaseCredential, BaseQueryProvider, QueryResult"]
+    D --> E["Implementation Layer: providers/azure, providers/aws, providers/gcp, providers/generic"]
     
     style A fill:#e1f5ff
     style B fill:#fff4e1
@@ -322,18 +322,18 @@ sequenceDiagram
 
 ```mermaid
 graph LR
-    subgraph Core["Core (Contracts & Registry)"]
-        contracts[contracts.py<br/>Protocol definitions]
-        creds[credentials.py<br/>CredentialRegistry]
-        providers[providers.py<br/>Provider factory]
-        errors[errors.py<br/>Error hierarchy]
-        retry[retry.py<br/>Retry strategies]
+    subgraph Core["Core - Contracts & Registry"]
+        contracts["contracts.py: Protocol definitions"]
+        creds["credentials.py: CredentialRegistry"]
+        providers["providers.py: Provider factory"]
+        errors["errors.py: Error hierarchy"]
+        retry["retry.py: Retry strategies"]
     end
     
     subgraph Config["Configuration"]
-        env[environment.py<br/>Env substitution]
-        loader[loader.py<br/>YAML loading]
-        models[models.py<br/>Config models]
+        env["environment.py: Env substitution"]
+        loader["loader.py: YAML loading"]
+        models["models.py: Config models"]
     end
     
     subgraph Providers["Data Sources"]
@@ -361,9 +361,9 @@ graph LR
     end
     
     subgraph Services["Business Logic"]
-        app[application.py<br/>Builder]
+        app["application.py: Builder"]
         comp_exec[component_executor.py]
-        executor[executor.py<br/>Report execution]
+        executor["executor.py: Report execution"]
     end
     
     subgraph Rendering["HTML Generation"]
@@ -373,7 +373,7 @@ graph LR
     end
     
     subgraph Email["Email Delivery"]
-        client[client.py<br/>SMTP]
+        client["client.py: SMTP"]
     end
     
     CLI[cli.py] --> Services

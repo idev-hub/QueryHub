@@ -10,47 +10,48 @@ Comprehensive Docker-based integration test suite that validates QueryHub with r
 graph TB
     subgraph Developer["Developer Machine"]
         subgraph Test["Test Execution Layer"]
-            pytest[pytest CLI<br/>-m integration<br/>-v -s]
-            make[Make targets<br/>make test-int<br/>make docker-up]
-            script[Helper Script<br/>./scripts/integration_test.sh]
+            pytest["pytest CLI: -m integration -v -s"]
+            make["Make targets: make test-int, make docker-up"]
+            script["Helper Script: ./scripts/integration_test.sh"]
         end
         
         subgraph TestImpl["Test Implementation"]
-            test_file[test_docker_integration.py<br/>@pytest.mark.integration]
-            test_file --> steps["1. Check Docker<br/>2. Wait for PostgreSQL<br/>3. Load config<br/>4. Create ReportExecutor<br/>5. Execute report<br/>6. Validate results<br/>7. Cleanup"]
+            test_file["test_docker_integration.py"]
+            steps["1. Check Docker | 2. Wait for PostgreSQL | 3. Load config | 4. Create ReportExecutor | 5. Execute report | 6. Validate results | 7. Cleanup"]
+            test_file --> steps
         end
         
         subgraph App["QueryHub Application"]
-            config[ConfigLoader]
-            executor[ReportExecutor]
-            template[TemplateEngine]
+            config["ConfigLoader"]
+            executor["ReportExecutor"]
+            template["TemplateEngine"]
             
-            config --> provider_conf[ProviderConfig]
-            executor --> sql_provider[SQLProvider]
-            template --> jinja[Jinja2 Env]
+            config --> provider_conf["ProviderConfig"]
+            executor --> sql_provider["SQLProvider"]
+            template --> jinja["Jinja2 Env"]
         end
         
         Test --> TestImpl
         TestImpl --> App
     end
     
-    App -->|SQL Queries<br/>asyncpg/SQLAlchemy<br/>Port 5433| Docker
+    App -->|"SQL Queries via asyncpg/SQLAlchemy Port 5433"| Docker
     
     subgraph Docker["Docker Environment"]
-        subgraph PG["PostgreSQL Container<br/>queryhub-test-postgres"]
-            pg16[PostgreSQL 16]
+        subgraph PG["PostgreSQL Container: queryhub-test-postgres"]
+            pg16["PostgreSQL 16"]
             
-            subgraph DB["Database: testdb<br/>User: testuser"]
-                sales[sales_metrics<br/>10 rows]
-                feedback[customer_feedback<br/>8 rows]
-                health[system_health<br/>5 rows]
+            subgraph DB["Database: testdb User: testuser"]
+                sales["sales_metrics: 10 rows"]
+                feedback["customer_feedback: 8 rows"]
+                health["system_health: 5 rows"]
             end
             
             pg16 --> DB
-            init[init.sql<br/>Schema & Data] -.->|Initialize| DB
+            init["init.sql: Schema & Data"] -.->|Initialize| DB
         end
         
-        health_check[Health Check<br/>pg_isready] -.->|Monitor| PG
+        health_check["Health Check: pg_isready"] -.->|Monitor| PG
     end
     
     style Developer fill:#e1f5ff
@@ -113,26 +114,26 @@ sequenceDiagram
 graph LR
     subgraph Report["sales_dashboard.yaml"]
         subgraph Tables["Table Components"]
-            sales_region[sales_by_region<br/>GROUP BY region]
-            product_perf[product_performance<br/>GROUP BY product]
-            cust_sat[customer_satisfaction<br/>AVG rating]
-            feedback[recent_feedback<br/>LIMIT 5]
-            health[system_health<br/>ORDER BY status]
+            sales_region["sales_by_region: GROUP BY region"]
+            product_perf["product_performance: GROUP BY product"]
+            cust_sat["customer_satisfaction: AVG rating"]
+            feedback["recent_feedback: LIMIT 5"]
+            health["system_health: ORDER BY status"]
         end
         
         subgraph Charts["Chart Components"]
-            daily[daily_sales<br/>Line chart]
+            daily["daily_sales: Line chart"]
         end
     end
     
-    Report -->|SQL Queries| PG[(PostgreSQL<br/>testdb)]
+    Report -->|"SQL Queries"| PG[("PostgreSQL testdb")]
     
     PG --> Data
     
     subgraph Data["Test Data"]
-        sm[sales_metrics<br/>10 rows]
-        cf[customer_feedback<br/>8 rows]
-        sh[system_health<br/>5 rows]
+        sm["sales_metrics: 10 rows"]
+        cf["customer_feedback: 8 rows"]
+        sh["system_health: 5 rows"]
     end
     
     style Tables fill:#e1f5ff
