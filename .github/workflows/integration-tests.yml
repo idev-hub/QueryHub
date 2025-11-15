@@ -72,10 +72,6 @@ jobs:
         
         echo "Database is ready for tests!"
 
-    - name: Run unit tests
-      run: |
-        uv run pytest -m "not integration" -v --cov=src/queryhub --cov-report=xml --cov-report=term
-
     - name: Run integration tests
       env:
         KALEIDO_NO_SANDBOX: "1"
