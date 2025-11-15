@@ -24,7 +24,7 @@ Community leaders are responsible for clarifying and enforcing our standards of 
 This Code of Conduct applies to all community spaces and when an individual is officially representing the community in public spaces.
 
 ## Enforcement
-Instances of abusive, harassing, or otherwise unacceptable behavior may be reported to the maintainers at security@queryhub.dev. All complaints will be reviewed and investigated promptly and fairly.
+Instances of abusive, harassing, or otherwise unacceptable behavior may be reported to the maintainers at idevhub@proton.me . All complaints will be reviewed and investigated promptly and fairly.
 
 ## Attribution
 This Code of Conduct is adapted from the [Contributor Covenant][homepage], version 2.1.

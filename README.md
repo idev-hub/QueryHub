@@ -473,6 +473,8 @@ Contributions are welcome! Please see:
 - **[CONTRIBUTING.md](CONTRIBUTING.md)** – Contribution guidelines
 - **[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)** – Community standards
 
+For questions or support, contact: **idevhub@proton.me**
+
 ## 📝 License
 
 QueryHub is released under the [MIT License](LICENSE).
