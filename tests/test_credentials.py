@@ -5,8 +5,6 @@ from __future__ import annotations
 import pytest
 
 from queryhub.config.models import (
-    AWSAccessKeyCredential,
-    ConnectionStringCredential,
     CredentialType,
     DefaultCredentialConfig,
     EmptyCredential,
