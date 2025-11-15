@@ -143,7 +143,7 @@ class SQLQueryProvider(BaseQueryProvider):
         # Otherwise construct from individual components
         driver = target.driver or "postgresql+asyncpg"
         host = target.host or cred_data.get("host", "localhost")
-        port = target.port or cred_data.get("port")
+        port = target.port or cred_data.get("port", 5432)
         database = target.database or cred_data.get("database", "")
         username = cred_data.get("username", "")
         password = cred_data.get("password", "")
