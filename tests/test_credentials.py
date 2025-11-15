@@ -66,7 +66,7 @@ def test_credential_registry_get_invalid_type() -> None:
         ProviderInitializationError,
         match="Credential reference must be a string ID",
     ):
-        registry.get_credential(123)  # type: ignore[arg-type]
+        registry.get_credential(123)
 
 
 def test_credential_registry_register_overwrite() -> None:
