@@ -142,11 +142,21 @@ class SQLQueryProvider(BaseQueryProvider):
 
         # Otherwise construct from individual components
         driver = target.driver or "postgresql+asyncpg"
-        host = target.host or cred_data.get("host", "localhost")
-        port = target.port or cred_data.get("port")
-        database = target.database or cred_data.get("database", "")
-        username = cred_data.get("username", "")
-        password = cred_data.get("password", "")
+        
+        # Safely extract credentials from cred_data if it's a dict
+        if isinstance(cred_data, dict):
+            host = target.host or cred_data.get("host", "localhost")
+            port = target.port or cred_data.get("port")
+            database = target.database or cred_data.get("database", "")
+            username = cred_data.get("username", "")
+            password = cred_data.get("password", "")
+        else:
+            # If cred_data is not a dict, use defaults from target or fallback values
+            host = target.host or "localhost"
+            port = target.port
+            database = target.database or ""
+            username = ""
+            password = ""
 
         return str(
             URL.create(
