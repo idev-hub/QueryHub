@@ -1,0 +1,22 @@
+# =============================================================================
+# Database Providers
+# =============================================================================
+
+providers:
+  # PostgreSQL
+  - id: postgres_sales
+    resource:
+      sql:
+        dsn: postgresql+asyncpg://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:sales}
+        options:
+          application_name: queryhub
+          pool_size: 5
+    credentials: postgres_reporting_credentials
+  
+  - id: postgres_reporting
+    resource:
+      sql:
+        dsn: postgresql+asyncpg://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:reporting}
+        options:
+          application_name: queryhub
+    credentials: postgres_reporting_credentials

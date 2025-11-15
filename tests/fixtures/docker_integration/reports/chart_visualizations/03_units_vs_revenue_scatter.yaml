@@ -1,0 +1,13 @@
+id: units_vs_revenue_scatter
+title: Units Sold vs Revenue (Scatter Plot)
+provider: postgres_test
+query:
+  text: "SELECT \n  units_sold,\n  revenue,\n  region\nFROM sales_metrics\nORDER BY\
+    \ sale_date\n"
+render:
+  type: chart
+  options:
+    chart_type: scatter
+    x_field: units_sold
+    y_field: revenue
+    color: region

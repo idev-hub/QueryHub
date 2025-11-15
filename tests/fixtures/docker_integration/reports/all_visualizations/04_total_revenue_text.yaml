@@ -1,0 +1,14 @@
+id: total_revenue_text
+title: Total Revenue
+provider: postgres_test
+query:
+  text: 'SELECT CAST(SUM(revenue) AS FLOAT) as total_revenue
+
+    FROM sales_metrics
+
+    '
+render:
+  type: text
+  options:
+    template: 'Total Revenue: {value:,.2f}'
+    value_path: total_revenue

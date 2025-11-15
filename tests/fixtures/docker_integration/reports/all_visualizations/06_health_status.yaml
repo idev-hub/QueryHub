@@ -1,0 +1,9 @@
+id: health_status
+title: System Health
+provider: postgres_test
+query:
+  text: "SELECT \n  service_name,\n  status,\n  response_time_ms,\n  error_count,\n\
+    \  check_timestamp\nFROM system_health\nORDER BY \n  CASE status \n    WHEN 'healthy'\
+    \ THEN 1\n    WHEN 'degraded' THEN 2\n    ELSE 3\n  END,\n  service_name\n"
+render:
+  type: table

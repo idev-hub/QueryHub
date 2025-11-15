@@ -235,6 +235,23 @@ class ReportScheduleConfig(BaseModel):
     model_config = ConfigDict(extra="allow")
 
 
+class ReportMetadataConfig(BaseModel):
+    """Metadata configuration for folder-based reports."""
+
+    id: str
+    title: str
+    description: Optional[str] = None
+    template: Optional[str] = "report.html.j2"  # Template filename (looks in template_folder)
+    template_folder: Optional[str] = None  # Optional: override default template folder
+    providers_folder: Optional[str] = None  # Optional: override default providers folder
+    smtp_config: Optional[str] = None  # Optional: SMTP config filename (e.g., "default.yaml" looks in config/smtp/)
+    layout: ReportLayoutConfig = Field(default_factory=ReportLayoutConfig)
+    email: Optional[ReportEmailConfig] = None
+    schedule: ReportScheduleConfig = Field(default_factory=ReportScheduleConfig)
+    tags: Dict[str, str] = Field(default_factory=dict)
+    model_config = ConfigDict(extra="allow")
+
+
 class ReportConfig(BaseModel):
     """Configuration for a report execution."""
 

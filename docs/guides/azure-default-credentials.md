@@ -143,7 +143,7 @@ az kusto database-principal-assignment create \
 
 ```bash
 # Test locally with verbose output
-queryhub run-report my_report --config-dir config -v
+queryhub run-report config/reports/my_report -v
 
 # Verify Azure CLI is logged in
 az account show
@@ -241,7 +241,7 @@ components:
 
 Run it:
 ```bash
-queryhub run-report daily_sales_report --config-dir config
+queryhub run-report config/reports/daily_sales_report
 ```
 
 Works locally with your Azure CLI credentials, and in production with managed identity - no changes needed! 🎉

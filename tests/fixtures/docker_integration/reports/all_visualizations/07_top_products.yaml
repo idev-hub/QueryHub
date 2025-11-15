@@ -1,0 +1,9 @@
+id: top_products
+title: Top 5 Products by Revenue
+provider: postgres_test
+query:
+  text: "SELECT \n  product,\n  SUM(revenue) as total_revenue,\n  SUM(units_sold)\
+    \ as total_units,\n  COUNT(*) as transactions\nFROM sales_metrics\nGROUP BY product\n\
+    ORDER BY total_revenue DESC\nLIMIT 5\n"
+render:
+  type: table

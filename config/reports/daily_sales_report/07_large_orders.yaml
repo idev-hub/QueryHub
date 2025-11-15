@@ -1,0 +1,33 @@
+# =============================================================================
+# Component: Recent Large Orders
+# =============================================================================
+
+id: large_orders
+title: Recent Large Orders (>$1000)
+description: High-value orders from today
+provider: postgres_sales
+
+query:
+  text: |
+    SELECT 
+      order_id,
+      customer_name,
+      amount,
+      status,
+      TO_CHAR(created_at, 'HH24:MI') as time
+    FROM sales
+    WHERE date = CURRENT_DATE 
+      AND amount > 1000
+    ORDER BY amount DESC
+    LIMIT 20
+
+render:
+  type: table
+  options:
+    columns: [order_id, customer_name, amount, status, time]
+    headers:
+      order_id: Order ID
+      customer_name: Customer
+      amount: Amount
+      status: Status
+      time: Time

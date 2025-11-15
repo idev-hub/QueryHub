@@ -1,0 +1,24 @@
+# =============================================================================
+# REST API Providers
+# =============================================================================
+
+providers:
+  - id: rest_weather
+    resource:
+      rest:
+        base_url: https://api.open-meteo.com/v1/
+        default_headers:
+          Accept: application/json
+        request_options:
+          raise_for_status: false
+          timeout: 30
+    credentials: rest_api_token
+  
+  - id: rest_internal_api
+    resource:
+      rest:
+        base_url: ${INTERNAL_API_URL}
+        default_headers:
+          Accept: application/json
+          Content-Type: application/json
+    credentials: rest_api_token

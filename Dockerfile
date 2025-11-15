@@ -21,7 +21,6 @@ WORKDIR /build
 # Copy project files
 COPY pyproject.toml ./
 COPY src ./src
-COPY templates ./templates
 COPY config ./config
 COPY README.md LICENSE CHANGELOG.md ./
 
@@ -70,7 +69,7 @@ a = Analysis(\n\
     pathex=[],\n\
     binaries=[],\n\
     datas=[\n\
-        ('templates', 'templates'),\n\
+        ('config/templates', 'templates'),\n\
         ('src/queryhub', 'queryhub'),\n\
     ],\n\
     hiddenimports=[\n\
@@ -143,10 +142,8 @@ WORKDIR /dist
 COPY --from=packager /build/dist/queryhub ./queryhub
 
 # Copy necessary files for distribution
-COPY templates ./templates
 COPY config ./config
 COPY README.md LICENSE CHANGELOG.md ./
-COPY examples ./examples
 
 # Create distribution-specific README
 RUN echo "# QueryHub - Standalone Distribution\n\
@@ -162,20 +159,22 @@ No Python installation required!\n\
 chmod +x queryhub\n\
 \n\
 # Run a report\n\
-./queryhub run-report sample_report --config-dir config --templates-dir templates\n\
+./queryhub run-report config/reports/sample_report\n\
 \`\`\`\n\
 \n\
 ### Windows\n\
 \`\`\`cmd\n\
-queryhub.exe run-report sample_report --config-dir config --templates-dir templates\n\
+queryhub.exe run-report config/reports/sample_report\n\
 \`\`\`\n\
 \n\
 ## Directory Structure\n\
 \n\
 - \`queryhub\` / \`queryhub.exe\` - The executable\n\
-- \`templates/\` - Jinja2 HTML templates\n\
-- \`config/\` - Configuration examples\n\
-- \`examples/\` - Additional configuration samples\n\
+- \`config/\` - All configuration\n\
+  - \`config/templates/\` - Jinja2 HTML templates\n\
+  - \`config/smtp/\` - SMTP configurations\n\
+  - \`config/providers/\` - Data source providers\n\
+  - \`config/reports/\` - Report definitions (folder-based)\n\
 - \`README.md\` - Full documentation\n\
 - \`DISTRIBUTION.md\` - Distribution-specific guide\n\
 \n\
@@ -192,13 +191,13 @@ queryhub.exe run-report sample_report --config-dir config --templates-dir templa
 \n\
 \`\`\`bash\n\
 # List available reports\n\
-./queryhub list-reports --config-dir config\n\
+./queryhub list-reports config\n\
 \n\
 # Run report without sending email\n\
-./queryhub run-report REPORT_ID --no-email --output-html output.html\n\
+./queryhub run-report config/reports/REPORT_NAME --no-email --output-html output.html\n\
 \n\
 # Run with verbose logging\n\
-./queryhub run-report REPORT_ID -v\n\
+./queryhub run-report config/reports/REPORT_NAME -v\n\
 \n\
 # Get help\n\
 ./queryhub --help\n\

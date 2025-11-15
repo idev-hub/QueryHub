@@ -1,50 +1,63 @@
 # CLI Reference
 
-QueryHub ships with a Typer-based CLI that exposes report execution and discovery commands. Install the package with uv (`uv sync`) to make the `queryhub` command available.
+QueryHub provides a simple command-line interface for running and managing reports.
 
 ## `run-report`
-Execute a configured report, render the HTML output, and optionally send it via SMTP.
 
-```
-queryhub run-report REPORT_ID \
-	--config-dir PATH \
-	--templates-dir PATH \
-	[--output-html FILE] \
-	[--email / --no-email] \
-	[--verbose]
+Execute a report from its folder path.
+
+```bash
+queryhub run-report REPORT_FOLDER \
+  [--output-html FILE] \
+  [--email / --no-email] \
+  [--verbose]
 ```
 
 | Option | Description |
 | --- | --- |
-| `REPORT_ID` | Required positional ID matching a YAML entry in `config/reports/`. |
-| `--config-dir` | Root directory containing `smtp.yaml`, `providers/`, and `reports/`. Default: `config`. |
-| `--templates-dir` | Directory with Jinja2 templates. Default: `templates`. |
-| `--output-html` | Path to write the rendered HTML file. Disabled if omitted. |
-| `--email / --no-email` | Toggle sending the result via SMTP. Enabled by default. |
-| `--verbose` | Enables debug logging. |
+| `REPORT_FOLDER` | Required. Path to report folder (e.g., `config/reports/my_report`) |
+| `--output-html` | Path to write the rendered HTML file. |
+| `--email / --no-email` | Toggle sending via email. Default: email enabled. |
+| `--verbose` / `-v` | Enable debug logging. |
 
-Example:
+**How it works:**
+- Auto-discovers config structure from report folder path
+- Templates loaded from `config/templates/` (or override in metadata)
+- Providers loaded from `config/providers/` (or override in metadata)
+- SMTP config loaded from `config/smtp/default.yaml` (or override in metadata)
+
+**Examples:**
 ```bash
-queryhub run-report sample_report --config-dir config --templates-dir templates --output-html sample.html --no-email --verbose
+# Run report and send email
+queryhub run-report config/reports/daily_sales
+
+# Preview only (no email)
+queryhub run-report config/reports/daily_sales --no-email
+
+# Save to file
+queryhub run-report config/reports/daily_sales --output-html report.html --no-email
+
+# Verbose logging
+queryhub run-report config/reports/daily_sales -v
 ```
 
 ## `list-reports`
-Enumerate available report IDs and titles.
 
-```
-queryhub list-reports --config-dir PATH --templates-dir PATH
+List all available reports in a config directory.
+
+```bash
+queryhub list-reports CONFIG_DIR
 ```
 
 | Option | Description |
 | --- | --- |
-| `--config-dir` | Configuration root to scan. Default: `config`. |
-| `--templates-dir` | Directory housing templates. Default: `templates`. |
+| `CONFIG_DIR` | Required. Path to config directory (e.g., `config`) |
 
-Example:
+**Example:**
 ```bash
-queryhub list-reports --config-dir config
-# sample_report    Executive Summary
-# csv_only         CSV Fixture Report
+queryhub list-reports config
+# Output:
+# daily_sales_report    Daily Sales Performance Report
 ```
 
 ## Exit codes

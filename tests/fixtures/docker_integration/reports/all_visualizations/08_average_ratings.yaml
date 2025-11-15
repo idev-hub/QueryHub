@@ -1,0 +1,9 @@
+id: average_ratings
+title: Product Ratings
+provider: postgres_test
+query:
+  text: "SELECT \n  product,\n  COUNT(*) as review_count,\n  ROUND(AVG(rating), 2)\
+    \ as avg_rating,\n  MIN(rating) as min_rating,\n  MAX(rating) as max_rating\n\
+    FROM customer_feedback\nGROUP BY product\nORDER BY avg_rating DESC\n"
+render:
+  type: table

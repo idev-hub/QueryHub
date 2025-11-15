@@ -33,7 +33,7 @@ class AWSDefaultCredential(BaseCredential[AWSCredentialConfig | None, Any]):
     async def get_connection(self, **context: Any) -> Any:
         """Get AWS connection using default credential chain."""
         try:
-            import boto3
+            import boto3  # type: ignore[import-untyped]
         except ImportError as exc:
             raise ProviderInitializationError(
                 "boto3 is required for AWS. Install with: pip install boto3"

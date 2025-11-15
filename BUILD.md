@@ -121,16 +121,19 @@ dist/
 ├── queryhub.exe          # Windows executable (if cross-compiled)
 ├── queryhub.sh           # Unix wrapper script
 ├── queryhub.bat          # Windows batch script
-├── templates/
-│   └── report.html.j2
 ├── config/
-│   ├── smtp.yaml
+│   ├── smtp/
+│   │   └── default.yaml  # SMTP configuration
+│   ├── templates/
+│   │   └── report.html.j2
 │   ├── providers/
-│   │   └── providers.yaml
+│   │   ├── credentials.yaml
+│   │   ├── 01_databases.yaml
+│   │   └── 02_azure.yaml
 │   └── reports/
-│       └── sample_report.yaml
-├── examples/
-│   └── example_config.yaml
+│       └── sample_report/
+│           ├── metadata.yaml
+│           └── 01_component.yaml
 ├── README.md
 ├── DISTRIBUTION.md
 ├── CHANGELOG.md
@@ -156,7 +159,7 @@ RUN pyinstaller --onefile queryhub.spec
 # Stage 3: Distribution - Assemble final package
 FROM alpine:latest as packager-dist
 COPY --from=packager /build/dist/queryhub ./
-COPY templates/ config/ README.md ./
+COPY config/ README.md ./
 ```
 
 ### Customizing the Build
@@ -183,8 +186,8 @@ RUN apt-get update && apt-get install -y \
 #### Include Additional Files
 In the `packager-dist` stage:
 ```dockerfile
-COPY data/ ./data/
-COPY scripts/ ./scripts/
+COPY config/ ./config/
+COPY docs/ ./docs/
 ```
 
 #### Optimize Size
@@ -267,8 +270,9 @@ hiddenimports=[
 
 Verify in Dockerfile `packager-dist` stage:
 ```dockerfile
-COPY templates ./templates
 COPY config ./config
+# Templates are now in config/templates/
+# SMTP configs are now in config/smtp/
 ```
 
 ### Import Errors in Executable
@@ -301,14 +305,12 @@ cd dist/
 ./queryhub --help
 
 # Test list reports
-./queryhub list-reports --config-dir config --templates-dir templates
+./queryhub list-reports config
 
 # Test execution (no email)
 export POSTGRES_USER=test
 export POSTGRES_PASSWORD=test
-./queryhub run-report sample_report \
-  --config-dir config \
-  --templates-dir templates \
+./queryhub run-report config/reports/sample_report \
   --no-email \
   --output-html test.html
 ```

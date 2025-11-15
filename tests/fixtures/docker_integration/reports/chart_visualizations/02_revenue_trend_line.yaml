@@ -1,0 +1,12 @@
+id: revenue_trend_line
+title: Revenue Trend Over Time (Line Chart)
+provider: postgres_test
+query:
+  text: "SELECT \n  DATE(sale_date) as date,\n  SUM(revenue) as daily_revenue\nFROM\
+    \ sales_metrics\nGROUP BY DATE(sale_date)\nORDER BY date\n"
+render:
+  type: chart
+  options:
+    chart_type: line
+    x_field: date
+    y_field: daily_revenue

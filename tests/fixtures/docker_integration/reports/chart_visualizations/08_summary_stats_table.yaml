@@ -1,0 +1,11 @@
+id: summary_stats_table
+title: Summary Statistics (Table)
+provider: postgres_test
+timeout_seconds: 60
+query:
+  text: "SELECT \n  COUNT(*) as total_transactions,\n  SUM(revenue) as total_revenue,\n\
+    \  ROUND(AVG(revenue), 2) as avg_revenue,\n  SUM(units_sold) as total_units,\n\
+    \  COUNT(DISTINCT region) as unique_regions,\n  COUNT(DISTINCT product) as unique_products\n\
+    FROM sales_metrics\n"
+render:
+  type: table

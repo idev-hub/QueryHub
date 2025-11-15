@@ -1,0 +1,29 @@
+# =============================================================================
+# Component: Total Revenue Summary
+# =============================================================================
+
+id: total_revenue
+title: Total Revenue Today
+description: Sum of all sales for the current day
+provider: postgres_sales
+timeout_seconds: 30
+
+query:
+  text: |
+    SELECT 
+      COALESCE(SUM(amount), 0) as total_revenue,
+      COUNT(*) as order_count,
+      COALESCE(AVG(amount), 0) as avg_order_value
+    FROM sales
+    WHERE date = CURRENT_DATE
+
+render:
+  type: text
+  options:
+    template: |
+      <div class="metric-card">
+        <h3>Today's Performance</h3>
+        <p class="metric-value">${{data[0].total_revenue:,.2f}}</p>
+        <p class="metric-label">Total Revenue</p>
+        <p class="metric-detail">{{data[0].order_count}} orders | Avg: ${{data[0].avg_order_value:,.2f}}</p>
+      </div>

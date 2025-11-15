@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>{{ report.title }}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { font-family: "Segoe UI", Arial, sans-serif; margin: 0; padding: 24px; background-color: #f5f7fb; color: #222; }
+    header { border-bottom: 2px solid #4f6df5; margin-bottom: 24px; padding-bottom: 12px; }
+    header h1 { margin: 0; }
+    .metadata { color: #555; font-size: 0.9rem; }
+    .component { background: #fff; border-radius: 8px; padding: 16px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08); }
+    .component h3 { margin-top: 0; color: #26307d; }
+    .component-table table { width: 100%; border-collapse: collapse; }
+    .component-table th, .component-table td { border: 1px solid #d9def9; padding: 8px; text-align: left; }
+    .component-table th { background-color: #eef1ff; font-weight: 600; }
+    .component-error { padding: 12px; border-left: 4px solid #d14343; background-color: #fceaea; color: #8a1c1c; }
+    footer { margin-top: 32px; font-size: 0.85rem; color: #666; }
+  </style>
+  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+</head>
+<body>
+  <header>
+    <h1>{{ report.title }}</h1>
+    {% if report.description %}<p>{{ report.description }}</p>{% endif %}
+    <p class="metadata">Generated at {{ generated_at.isoformat() }}</p>
+  </header>
+
+  {% for component in components %}
+    <section id="component-{{ component.id }}" class="component">
+      {% if component.error %}
+        <div class="component-error">
+          <strong>Component failed:</strong> {{ component.error }}
+        </div>
+      {% else %}
+        {{ component.rendered | safe }}
+      {% endif %}
+    </section>
+  {% endfor %}
+
+  <footer>
+    <p>Report assembled by QueryHub.</p>
+  </footer>
+</body>
+</html>
