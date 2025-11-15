@@ -51,6 +51,7 @@ class AWSDefaultCredential(BaseCredential[AWSCredentialConfig | None, Any]):
         pass
 
 
+
 class AWSAccessKeyCredential(BaseCredential[AWSCredentialConfig, Any]):
     """AWS access key and secret key authentication.
 
