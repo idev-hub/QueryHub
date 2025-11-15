@@ -390,9 +390,6 @@ graph LR
     style Services fill:#e1ffe1
     style Rendering fill:#f5e1ff
     style Email fill:#ffe1e1
-``` email/                     # Email delivery (SRP, Facade)
-│   └── client.py              # SMTP client
-└── cli.py                     # Command-line interface
 ```
 
 ## Error Hierarchy
