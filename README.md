@@ -546,3 +546,4 @@ QueryHub is built with these excellent open-source projects:
 ---
 
 **Made with ❤️ by the QueryHub team**
+
