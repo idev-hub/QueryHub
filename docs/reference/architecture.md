@@ -24,52 +24,18 @@ QueryHub has been refactored to support multiple cloud providers with a clean se
 
 ## Architecture Layers
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    Application Layer                         │
-│  (CLI, ReportExecutor, ComponentExecutor)                    │
-└─────────────────────────┬───────────────────────────────────┘
-                          │
-┌─────────────────────────▼───────────────────────────────────┐
-│                     Core Layer                               │
-│  - ProviderFactoryProtocol                                   │
-│  - CredentialRegistry (caches credentials)                   │
-│  - DefaultProviderFactory (orchestrates creation)            │
-└─────────────────────────┬───────────────────────────────────┘
-                          │
-┌─────────────────────────▼───────────────────────────────────┐
-│                   Factory Layer                              │
-│  - credential_factory.py (routes to credential classes)      │
-│  - provider_factory.py (routes to provider classes)          │
-└─────────────────────────┬───────────────────────────────────┘
-                          │
-┌─────────────────────────▼───────────────────────────────────┐
-│                 Abstraction Layer                            │
-│  - BaseCredential[TConnection] (generic credential base)     │
-│  - BaseQueryProvider (query execution interface)             │
-│  - QueryResult (data container)                              │
-└─────────────────────────┬───────────────────────────────────┘
-                          │
-┌─────────────────────────▼───────────────────────────────────┐
-│              Implementation Layer                            │
-│  providers/                                                  │
-│    ├── azure/                                                │
-│    │   ├── credentials.py (4 strategies)                     │
-│    │   └── resources/                                        │
-│    │       └── adx.py (ADXQueryProvider)                     │
-│    ├── aws/                                                  │
-│    │   ├── credentials.py (3 strategies)                     │
-│    │   └── resources/ (future: S3, Athena, etc.)            │
-│    ├── gcp/                                                  │
-│    │   ├── credentials.py (2 strategies)                     │
-│    │   └── resources/ (future: BigQuery, etc.)              │
-│    └── generic/                                              │
-│        ├── credentials.py (4 types)                          │
-│        └── resources/                                        │
-│            ├── sql.py (SQLQueryProvider)                     │
-│            ├── rest.py (RESTQueryProvider)                   │
-│            └── csv.py (CSVQueryProvider)                     │
-└─────────────────────────────────────────────────────────────┘
+```mermaid
+graph TD
+    A["Application Layer: CLI, ReportExecutor, ComponentExecutor"] --> B["Core Layer: ProviderFactoryProtocol, CredentialRegistry, DefaultProviderFactory"]
+    B --> C["Factory Layer: credential_factory.py, provider_factory.py"]
+    C --> D["Abstraction Layer: BaseCredential, BaseQueryProvider, QueryResult"]
+    D --> E["Implementation Layer: providers/azure, providers/aws, providers/gcp, providers/generic"]
+    
+    style A fill:#e1f5ff
+    style B fill:#fff4e1
+    style C fill:#ffe1f5
+    style D fill:#e1ffe1
+    style E fill:#f5e1ff
 ```
 
 ## Component Details
@@ -255,26 +221,29 @@ providers:
 
 ## Query Flow
 
-```
-1. User executes report
-   ↓
-2. ReportExecutor loads components
-   ↓
-3. ComponentExecutor resolves provider by ID
-   ↓
-4. ProviderResolver gets provider from factory (with caching)
-   ↓
-5. ProviderFactory creates provider instance
-   ↓
-6. Provider gets credential from registry
-   ↓
-7. CredentialRegistry returns cached credential or creates new one
-   ↓
-8. Credential.get_connection() returns connection object
-   ↓
-9. Provider executes query using connection
-   ↓
-10. Results returned as QueryResult
+```mermaid
+sequenceDiagram
+    participant User
+    participant ReportExecutor
+    participant ComponentExecutor
+    participant ProviderFactory
+    participant CredentialRegistry
+    participant Provider
+    participant Database
+
+    User->>ReportExecutor: execute report
+    ReportExecutor->>ComponentExecutor: load components
+    ComponentExecutor->>ProviderFactory: get provider by ID
+    ProviderFactory->>Provider: create instance
+    Provider->>CredentialRegistry: get credential
+    CredentialRegistry->>CredentialRegistry: return cached or create new
+    CredentialRegistry->>Provider: credential instance
+    Provider->>Provider: get_connection()
+    Provider->>Database: execute query
+    Database->>Provider: results
+    Provider->>ComponentExecutor: QueryResult
+    ComponentExecutor->>ReportExecutor: rendered component
+    ReportExecutor->>User: HTML report
 ```
 
 ## Benefits of New Architecture
@@ -349,56 +318,78 @@ providers:
 ### Integration Tests
 - Test credential creation with real cloud SDKs (mocked)
 - Test provider execution end-to-end
-- Test credential reuse across multiple providers
-- Test error handling and retry logic
-
 ## Module Organization
 
-```
-queryhub/
-├── core/                      # Core abstractions and contracts
-│   ├── contracts.py           # Protocol definitions (ISP)
-│   ├── credentials.py         # CredentialRegistry
-│   ├── errors.py              # Error hierarchy
-│   ├── providers.py           # Provider factory
-│   ├── retry.py               # Retry strategies
-│   └── resource_manager.py    # Resource lifecycle management
-├── config/                    # Configuration management (SRP)
-│   ├── environment.py         # Environment substitution
-│   ├── loader.py              # Configuration loading
-│   └── models.py              # Configuration models
-├── providers/                 # Data source implementations (OCP)
-│   ├── base_credentials.py    # Credential abstraction
-│   ├── base_query_provider.py # Provider abstraction
-│   ├── credential_factory.py  # Credential factory
-│   ├── provider_factory.py    # Provider factory
-│   ├── azure/                 # Azure implementations
-│   │   ├── credentials.py     # Azure credential strategies
-│   │   └── resources/
-│   │       └── adx.py         # Azure Data Explorer
-│   ├── aws/                   # AWS implementations
-│   │   ├── credentials.py     # AWS credential strategies
-│   │   └── resources/         # Future: S3, Athena, etc.
-│   ├── gcp/                   # GCP implementations
-│   │   ├── credentials.py     # GCP credential strategies
-│   │   └── resources/         # Future: BigQuery, etc.
-│   └── generic/               # Cloud-agnostic implementations
-│       ├── credentials.py     # Generic credentials
-│       └── resources/
-│           ├── sql.py         # SQL databases
-│           ├── rest.py        # REST APIs
-│           └── csv.py         # CSV files
-├── rendering/                 # HTML rendering (OCP, Strategy)
-│   ├── renderers.py           # Renderer implementations
-│   ├── jinja_env.py           # Jinja configuration
-│   └── template_engine.py     # Template engine
-├── services/                  # Business logic (SRP, DIP)
-│   ├── application.py         # Application builder
-│   ├── component_executor.py  # Component execution
-│   └── executor.py            # Report execution
-├── email/                     # Email delivery (SRP, Facade)
-│   └── client.py              # SMTP client
-└── cli.py                     # Command-line interface
+```mermaid
+graph LR
+    subgraph Core["Core - Contracts & Registry"]
+        contracts["contracts.py: Protocol definitions"]
+        creds["credentials.py: CredentialRegistry"]
+        providers["providers.py: Provider factory"]
+        errors["errors.py: Error hierarchy"]
+        retry["retry.py: Retry strategies"]
+    end
+    
+    subgraph Config["Configuration"]
+        env["environment.py: Env substitution"]
+        loader["loader.py: YAML loading"]
+        models["models.py: Config models"]
+    end
+    
+    subgraph Providers["Data Sources"]
+        base_cred[base_credentials.py]
+        base_prov[base_query_provider.py]
+        cred_factory[credential_factory.py]
+        prov_factory[provider_factory.py]
+        
+        subgraph Azure
+            azure_creds[credentials.py]
+            adx[resources/adx.py]
+        end
+        
+        subgraph AWS
+            aws_creds[credentials.py]
+            aws_res[resources/...]
+        end
+        
+        subgraph Generic
+            gen_creds[credentials.py]
+            sql[resources/sql.py]
+            rest[resources/rest.py]
+            csv[resources/csv.py]
+        end
+    end
+    
+    subgraph Services["Business Logic"]
+        app["application.py: Builder"]
+        comp_exec[component_executor.py]
+        executor["executor.py: Report execution"]
+    end
+    
+    subgraph Rendering["HTML Generation"]
+        renderers[renderers.py]
+        jinja[jinja_env.py]
+        template[template_engine.py]
+    end
+    
+    subgraph Email["Email Delivery"]
+        client["client.py: SMTP"]
+    end
+    
+    CLI[cli.py] --> Services
+    Services --> Core
+    Services --> Providers
+    Services --> Rendering
+    Services --> Email
+    Core --> Config
+    Providers --> Core
+    
+    style Core fill:#e1f5ff
+    style Config fill:#fff4e1
+    style Providers fill:#ffe1f5
+    style Services fill:#e1ffe1
+    style Rendering fill:#f5e1ff
+    style Email fill:#ffe1e1
 ```
 
 ## Error Hierarchy

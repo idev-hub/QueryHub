@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Optional
 
 import typer
+import yaml
 
 from .core.errors import QueryHubError
 from .email.client import EmailClient
@@ -16,6 +17,25 @@ from .services import QueryHubApplicationBuilder, ReportExecutionResult
 _LOGGER = logging.getLogger(__name__)
 
 app = typer.Typer(add_completion=False, help="QueryHub automation CLI")
+
+
+def find_metadata_file(folder: Path) -> Path:
+    """Find metadata file with .yaml or .yml extension.
+    
+    Args:
+        folder: Directory containing the metadata file
+        
+    Returns:
+        Path to the metadata file
+        
+    Raises:
+        FileNotFoundError: If no metadata file is found
+    """
+    for ext in (".yaml", ".yml"):
+        metadata_path = folder / f"metadata{ext}"
+        if metadata_path.exists():
+            return metadata_path
+    raise FileNotFoundError(f"No metadata.yaml or metadata.yml found in {folder}")
 
 
 def configure_logging(verbose: bool) -> None:
@@ -73,11 +93,7 @@ async def _run_report_folder(
     _LOGGER.debug("Config root: %s", config_root)
     
     # Resolve template and providers folders
-    metadata_path = report_folder / "metadata.yaml"
-    if not metadata_path.exists():
-        metadata_path = report_folder / "metadata.yml"
-    
-    import yaml
+    metadata_path = find_metadata_file(report_folder)
     metadata_data = yaml.safe_load(metadata_path.read_text())
     template_folder_override = metadata_data.get("template_folder")
     providers_folder_override = metadata_data.get("providers_folder")
@@ -168,59 +184,6 @@ async def _run_report_folder(
         await executor.shutdown()
 
 
-async def _run_report(
-    report_id: str,
-    config_dir: Path,
-    templates_dir: Path,
-    output_html: Optional[Path],
-    email: bool,
-) -> ReportExecutionResult:
-    """Execute report with proper resource management."""
-    _LOGGER.info("Initializing QueryHub application builder")
-    builder = QueryHubApplicationBuilder(
-        config_dir=config_dir,
-        templates_dir=templates_dir,
-        auto_reload_templates=False,
-    )
-    _LOGGER.debug("Creating report executor")
-    executor = await builder.create_executor()
-
-    try:
-        _LOGGER.info("Executing report: %s", report_id)
-        result = await executor.execute_report(report_id)
-
-        if output_html:
-            _LOGGER.info("Writing report HTML to file: %s", output_html)
-            output_html.write_text(result.html, encoding="utf-8")
-            typer.echo(f"Report written to {output_html}")
-
-        typer.echo(f"Report '{result.report.title}' generated at {result.generated_at.isoformat()}")
-        _LOGGER.info(
-            "Report '%s' completed: %d/%d components successful",
-            result.report.title,
-            result.success_count,
-            len(result.components),
-        )
-
-        if email:
-            _LOGGER.info("Sending report via email")
-            smtp_client = EmailClient(executor.smtp_config)
-            overrides = result.report.email
-            await smtp_client.send_report(result, overrides=overrides)
-            typer.echo("Report email sent")
-            _LOGGER.info("Email sent successfully")
-
-        if result.has_failures:
-            failed_ids = [c.component.id for c in result.components if not c.is_success]
-            _LOGGER.warning("Report completed with component failures: %s", failed_ids)
-            typer.echo("Report completed with component failures", err=True)
-
-        return result
-    finally:
-        _LOGGER.debug("Shutting down executor and cleaning up resources")
-        await executor.shutdown()
-
-
 @app.command("list-reports")
 def list_reports(
     config_dir: Path = typer.Argument(Path("config"), exists=True, file_okay=False, help="Configuration directory containing reports/"),
@@ -247,13 +210,12 @@ async def _list_reports(config_dir: Path) -> None:
     
     _LOGGER.info("Found %d report folder(s)", len(report_folders))
     for report_folder in sorted(report_folders):
-        metadata_path = report_folder / "metadata.yaml"
-        if not metadata_path.exists():
-            metadata_path = report_folder / "metadata.yml"
-        
-        if metadata_path.exists():
-            import yaml
+        try:
+            metadata_path = find_metadata_file(report_folder)
             metadata = yaml.safe_load(metadata_path.read_text())
             report_id = metadata.get("id", report_folder.name)
             report_title = metadata.get("title", "No title")
             typer.echo(f"{report_id}\t{report_title}")
+        except FileNotFoundError:
+            _LOGGER.debug("Skipping folder without metadata: %s", report_folder)
+            continue
