@@ -94,6 +94,27 @@ class YAMLFileReader:
         _LOGGER.debug("Loaded %d provider(s) from directory: %s", len(documents), directory)
         return documents
 
+    def read_credentials_from_providers_directory(self, directory: Path) -> list[Any]:
+        """Read credentials from provider directory files."""
+        documents: list[Any] = []
+        if not directory.exists():
+            _LOGGER.debug("Config directory %s not found", directory)
+            return documents
+
+        _LOGGER.debug("Reading credentials from provider directory: %s", directory)
+        yaml_files = sorted(directory.glob("*.y*ml"))
+        
+        for file_path in yaml_files:
+            data = self.read_file(file_path)
+            if data and isinstance(data, Mapping) and "credentials" in data:
+                credentials = data.get("credentials")
+                if isinstance(credentials, list):
+                    documents.extend(credentials)
+                    _LOGGER.debug("Loaded %d credential(s) from %s", len(credentials), file_path.name)
+
+        _LOGGER.debug("Loaded %d total credential(s) from directory: %s", len(documents), directory)
+        return documents
+
     def _extract_collection_items(self, data: Any, origin: Path) -> list[Any]:
         """Extract items from collection data."""
         if isinstance(data, Mapping):
@@ -104,6 +125,10 @@ class YAMLFileReader:
             if "reports" in data:
                 extracted = data.get("reports")
                 return self._ensure_list(extracted, origin)
+            if "credentials" in data:
+                # Skip credentials - they are loaded separately
+                _LOGGER.debug("Skipping credentials section in %s (will be loaded separately)", origin)
+                return []
             return [self._ensure_mapping(data, origin)]
 
         if isinstance(data, list):
@@ -319,7 +344,14 @@ class ConfigLoader:
         reports = self._load_reports_from_folders(self._root / "reports")
         
         _LOGGER.debug("Loading credential configurations")
-        credentials_data = self._load_and_substitute_collection(self._root / "credentials")
+        # Load from dedicated credentials directory if it exists
+        credentials_dir = self._root / "credentials"
+        if credentials_dir.exists():
+            credentials_data = self._load_and_substitute_collection(credentials_dir)
+        else:
+            # Fallback: load credentials from providers directory
+            credentials_data = self._load_and_substitute_credentials_from_providers(self._root / "providers")
+        
 
         # SMTP config is optional (for HTML-only mode)
         if smtp_data:
@@ -487,6 +519,11 @@ class ConfigLoader:
     def _load_and_substitute_providers(self, directory: Path) -> list[dict[str, Any]]:
         """Load providers supporting multi-file format."""
         documents = self._reader.read_providers_directory(directory)
+        return [self._substitutor.substitute_in_data(doc) for doc in documents]
+
+    def _load_and_substitute_credentials_from_providers(self, directory: Path) -> list[dict[str, Any]]:
+        """Load credentials from providers directory (multi-file format)."""
+        documents = self._reader.read_credentials_from_providers_directory(directory)
         return [self._substitutor.substitute_in_data(doc) for doc in documents]
 
     def _load_and_substitute_collection(self, directory: Path) -> list[dict[str, Any]]:

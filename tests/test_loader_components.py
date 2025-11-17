@@ -318,3 +318,175 @@ def test_yaml_file_reader_ensure_list_error() -> None:
     """Test ensure_list raises error for invalid data."""
     with pytest.raises(ConfigurationError, match="Expected list or mapping"):
         YAMLFileReader._ensure_list(123, Path("test.yaml"))
+
+
+def test_yaml_file_reader_read_providers_directory_with_credentials(tmp_path: Path) -> None:
+    """Test that credentials sections are skipped when reading providers."""
+    dir_path = tmp_path / "providers"
+    dir_path.mkdir()
+
+    yaml_content = """
+credentials:
+  - id: test_cred
+    generic:
+      type: none
+
+providers:
+  - id: provider1
+    resource:
+      sql:
+        dsn: "sqlite:///:memory:"
+    credentials: test_cred
+"""
+    (dir_path / "providers.yaml").write_text(yaml_content, encoding="utf-8")
+
+    reader = YAMLFileReader()
+    documents = reader.read_providers_directory(dir_path)
+
+    # Should only extract providers, not credentials
+    assert len(documents) == 1
+    assert documents[0]["id"] == "provider1"
+
+
+def test_yaml_file_reader_read_credentials_from_providers_directory(tmp_path: Path) -> None:
+    """Test extracting credentials from providers directory."""
+    dir_path = tmp_path / "providers"
+    dir_path.mkdir()
+
+    yaml_content = """
+credentials:
+  - id: cred1
+    generic:
+      type: none
+  - id: cred2
+    postgresql:
+      type: username_password
+      username: user
+      password: pass
+
+providers:
+  - id: provider1
+    resource:
+      sql:
+        dsn: "sqlite:///:memory:"
+"""
+    (dir_path / "providers.yaml").write_text(yaml_content, encoding="utf-8")
+
+    reader = YAMLFileReader()
+    credentials = reader.read_credentials_from_providers_directory(dir_path)
+
+    # Should extract both credentials
+    assert len(credentials) == 2
+    assert credentials[0]["id"] == "cred1"
+    assert credentials[1]["id"] == "cred2"
+
+
+def test_yaml_file_reader_read_credentials_from_multiple_files(tmp_path: Path) -> None:
+    """Test extracting credentials from multiple files in providers directory."""
+    dir_path = tmp_path / "providers"
+    dir_path.mkdir()
+
+    # File 1: credentials only
+    (dir_path / "01_credentials.yaml").write_text("""
+credentials:
+  - id: cred1
+    generic:
+      type: none
+""", encoding="utf-8")
+
+    # File 2: both credentials and providers
+    (dir_path / "02_providers.yaml").write_text("""
+credentials:
+  - id: cred2
+    postgresql:
+      type: username_password
+      username: user
+      password: pass
+
+providers:
+  - id: provider1
+    resource:
+      sql:
+        dsn: "sqlite:///:memory:"
+""", encoding="utf-8")
+
+    # File 3: providers only (no credentials)
+    (dir_path / "03_more_providers.yaml").write_text("""
+providers:
+  - id: provider2
+    resource:
+      csv:
+        root_path: /data
+""", encoding="utf-8")
+
+    reader = YAMLFileReader()
+    credentials = reader.read_credentials_from_providers_directory(dir_path)
+
+    # Should extract credentials from files 1 and 2
+    assert len(credentials) == 2
+    credential_ids = [c["id"] for c in credentials]
+    assert "cred1" in credential_ids
+    assert "cred2" in credential_ids
+
+
+def test_yaml_file_reader_read_credentials_no_credentials_section(tmp_path: Path) -> None:
+    """Test that files without credentials section are handled gracefully."""
+    dir_path = tmp_path / "providers"
+    dir_path.mkdir()
+
+    yaml_content = """
+providers:
+  - id: provider1
+    resource:
+      sql:
+        dsn: "sqlite:///:memory:"
+"""
+    (dir_path / "providers.yaml").write_text(yaml_content, encoding="utf-8")
+
+    reader = YAMLFileReader()
+    credentials = reader.read_credentials_from_providers_directory(dir_path)
+
+    # Should return empty list when no credentials found
+    assert len(credentials) == 0
+
+
+def test_yaml_file_reader_read_credentials_empty_directory(tmp_path: Path) -> None:
+    """Test reading credentials from non-existent directory."""
+    reader = YAMLFileReader()
+    credentials = reader.read_credentials_from_providers_directory(tmp_path / "missing")
+
+    assert credentials == []
+
+
+def test_extract_collection_items_credentials_skipped(tmp_path: Path) -> None:
+    """Test that _extract_collection_items skips credentials sections."""
+    data = {
+        "credentials": [
+            {"id": "cred1", "generic": {"type": "none"}},
+        ]
+    }
+
+    reader = YAMLFileReader()
+    result = reader._extract_collection_items(data, tmp_path / "test.yaml")
+
+    # Should return empty list, not the credentials
+    assert result == []
+
+
+def test_extract_collection_items_mixed_content(tmp_path: Path) -> None:
+    """Test extraction with both providers and credentials in same file."""
+    data = {
+        "credentials": [
+            {"id": "cred1", "generic": {"type": "none"}},
+        ],
+        "providers": [
+            {"id": "provider1", "resource": {"sql": {"dsn": "sqlite:///:memory:"}}},
+        ],
+    }
+
+    reader = YAMLFileReader()
+    result = reader._extract_collection_items(data, tmp_path / "test.yaml")
+
+    # Should only extract providers
+    assert len(result) == 1
+    assert result[0]["id"] == "provider1"

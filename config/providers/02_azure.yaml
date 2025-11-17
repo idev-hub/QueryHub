@@ -15,8 +15,8 @@ providers:
   - id: adx_production
     resource:
       adx:
-        cluster_uri: ${ADX_CLUSTER_URI}
-        database: ${ADX_DATABASE}
+        cluster_uri: ${ADX_CLUSTER_URI:https://help.kusto.windows.net}
+        database: ${ADX_DATABASE:Samples}
         default_timeout_seconds: 120
         retry_attempts: 3
     credentials: azure_managed_identity
