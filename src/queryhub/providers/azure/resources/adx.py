@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from datetime import timedelta
 from typing import Any, Mapping, Optional
 
 from ....config.provider_models import ProviderConfig
@@ -161,7 +162,8 @@ class ADXQueryProvider(BaseQueryProvider):
 
         timeout = query.get("timeout_seconds") or self.config.default_timeout_seconds
         if timeout:
-            properties.set_option("servertimeout", f"{timeout}s")
+            # Set timeout as timedelta, not string
+            properties.set_option("servertimeout", timedelta(seconds=timeout))
 
         for option_name, option_value in query.get("options", {}).items():
             properties.set_option(option_name, option_value)

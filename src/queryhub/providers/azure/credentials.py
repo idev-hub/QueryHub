@@ -59,9 +59,15 @@ class AzureDefaultCredential(BaseCredential[AzureCredentialConfig, Any]):
 
         self._azure_credential = AzureDefaultCred()
 
-        return KustoConnectionStringBuilder.with_aad_token_provider(  # type: ignore[attr-defined]
+        # Use the async token provider for the new Azure SDK
+        async def token_callback():
+            """Async token callback for Kusto client."""
+            token = await self._azure_credential.get_token("https://kusto.kusto.windows.net/.default")
+            return token.token
+
+        return KustoConnectionStringBuilder.with_async_token_provider(
             cluster_uri,
-            lambda: self._azure_credential.get_token("https://kusto.kusto.windows.net/.default"),
+            token_callback,
         )
 
     async def close(self) -> None:

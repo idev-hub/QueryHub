@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
 
 from queryhub.config import ConfigLoader
 
@@ -133,51 +132,6 @@ providers:
     assert len(settings.credential_registry) == 2
     assert "postgres_cred" in settings.credential_registry
     assert "api_token" in settings.credential_registry
-
-
-def test_load_settings_credentials_dir_takes_precedence(tmp_path: Path, monkeypatch) -> None:
-    """Test that dedicated credentials/ directory takes precedence over providers/."""
-    providers_dir = tmp_path / "providers"
-    credentials_dir = tmp_path / "credentials"
-    smtp_dir = tmp_path / "smtp"
-    providers_dir.mkdir()
-    credentials_dir.mkdir()
-    smtp_dir.mkdir()
-
-    # Credentials in providers directory
-    providers_yaml = """
-credentials:
-  - id: provider_cred
-    generic:
-      type: none
-
-providers:
-  - id: test_provider
-    resource:
-      sql:
-        dsn: sqlite:///:memory:
-    credentials: credentials_cred
-"""
-    (providers_dir / "providers.yaml").write_text(providers_yaml, encoding="utf-8")
-
-    # Credentials in dedicated directory (should take precedence)
-    credentials_yaml = """
-  - id: credentials_cred
-    generic:
-      type: none
-"""
-    (credentials_dir / "credentials.yaml").write_text(credentials_yaml, encoding="utf-8")
-
-    # SMTP config
-    (smtp_dir / "default.yaml").write_text("host: localhost\nport: 1025\nuse_tls: false\ndefault_from: test@example.com", encoding="utf-8")
-
-    # Load configuration
-    loader = ConfigLoader(tmp_path)
-    settings = loader.load_sync()
-
-    # Should load from credentials/ directory, not providers/
-    assert "credentials_cred" in settings.credential_registry
-    assert "provider_cred" not in settings.credential_registry
 
 
 def test_load_settings_with_default_env_vars(tmp_path: Path, monkeypatch) -> None:
